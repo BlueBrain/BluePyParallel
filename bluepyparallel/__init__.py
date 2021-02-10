@@ -1,3 +1,3 @@
 """BluePyParallel functions."""
-from .evaluator import evaluate_combos
+from .evaluator import evaluate
 from .parallel import init_parallel_factory
