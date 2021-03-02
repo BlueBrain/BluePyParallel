@@ -11,18 +11,18 @@ import numpy as np
 
 try:
     import dask.distributed
-except ModuleNotFoundError:
-    pass
+    import dask_mpi
+
+    dask_available = True
+except ImportError:
+    dask_available = False
 
 try:
     import ipyparallel
-except ModuleNotFoundError:
-    pass
 
-try:
-    import dask_mpi
-except ModuleNotFoundError:
-    pass
+    ipyparallel_available = True
+except ImportError:
+    ipyparallel_available = False
 
 
 L = logging.getLogger(__name__)
@@ -84,6 +84,14 @@ def _with_batches(mapper, func, iterable, batch_size=None):
 
     for _iterable in iterables:
         yield from mapper(func, _iterable)
+
+
+class SerialFactory(ParallelFactory):
+    """Factory that do not work in parallel."""
+
+    def get_mapper(self):
+        """Get a map."""
+        return map
 
 
 class MultiprocessingFactory(ParallelFactory):
@@ -182,11 +190,32 @@ class DaskFactory(ParallelFactory):
 
 
 def init_parallel_factory(parallel_lib):
-    """Return the desired instance of the parallel factory."""
-    parallel_factory = {
-        "dask": DaskFactory,
-        "ipyparallel": IPyParallelFactory,
+    """Return the desired instance of the parallel factory.
+
+    The main factories are:
+
+    * None: return a serial mapper (the standard :func:`map` function).
+    * multiprocessing: return a mapper using the standard :mod:`multiprocessing`.
+    * dask: return a mapper using the :class:`distributed.Client`.
+    * ipyparallel: return a mapper using the :mod:`ipyparallel` library.
+    """
+    parallel_factories = {
+        None: SerialFactory,
         "multiprocessing": MultiprocessingFactory,
-    }[parallel_lib]()
+    }
+    if dask_available:
+        parallel_factories["dask"] = DaskFactory
+    if ipyparallel_available:
+        parallel_factories["ipyparallel"] = IPyParallelFactory
+
+    try:
+        parallel_factory = parallel_factories[parallel_lib]()
+    except KeyError:
+        L.critical(
+            "The %s factory is not available, maybe the required libraries are not properly "
+            "installed.",
+            parallel_lib,
+        )
+        raise
     L.info("Initialized %s factory", parallel_lib)
     return parallel_factory
