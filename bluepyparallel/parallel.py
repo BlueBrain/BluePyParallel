@@ -6,6 +6,7 @@ import time
 from abc import abstractmethod
 from collections.abc import Iterator
 from functools import partial
+from multiprocessing.pool import Pool
 
 import numpy as np
 
@@ -33,8 +34,9 @@ class ParallelFactory:
 
     _BATCH_SIZE = "PARALLEL_BATCH_SIZE"
 
-    def __init__(self):
-        self.batch_size = int(os.getenv(self._BATCH_SIZE, "0")) or None
+    def __init__(self, *args, batch_size=None, **kwargs):  # pylint: disable=unused-argument
+        self.batch_size = batch_size or int(os.getenv(self._BATCH_SIZE, "0")) or None
+        self.nb_processes = 1
         L.info("Using %s=%s", self._BATCH_SIZE, self.batch_size)
 
     @abstractmethod
@@ -64,7 +66,7 @@ class NoDaemonProcess(multiprocessing.Process):
     daemon = property(_get_daemon, _set_daemon)
 
 
-class NestedPool(multiprocessing.pool.Pool):  # pylint: disable=abstract-method
+class NestedPool(Pool):  # pylint: disable=abstract-method
     """Class that represents a MultiProcessing nested pool"""
 
     Process = NoDaemonProcess
@@ -78,7 +80,7 @@ def _with_batches(mapper, func, iterable, batch_size=None):
     if isinstance(iterable, Iterator):
         iterable = list(iterable)
     if batch_size is not None:
-        iterables = np.array_split(iterable, len(iterable) // batch_size)
+        iterables = np.array_split(iterable, len(iterable) // min(batch_size, len(iterable)))
     else:
         iterables = [iterable]
 
@@ -99,11 +101,12 @@ class MultiprocessingFactory(ParallelFactory):
 
     _CHUNKSIZE = "PARALLEL_CHUNKSIZE"
 
-    def __init__(self):
+    def __init__(self, *args, processes=None, **kwargs):
         """Initialize multiprocessing factory."""
 
         super().__init__()
-        self.pool = NestedPool()
+        self.pool = NestedPool(*args, **kwargs)
+        self.nb_processes = processes or os.cpu_count()
 
     def get_mapper(self):
         """Get a NestedPool."""
@@ -123,17 +126,19 @@ class IPyParallelFactory(ParallelFactory):
 
     _IPYTHON_PROFILE = "IPYTHON_PROFILE"
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         """Initialize the ipyparallel factory."""
 
         super().__init__()
         self.rc = None
+        self.nb_processes = 1
 
     def get_mapper(self):
         """Get an ipyparallel mapper using the profile name provided."""
         profile = os.getenv(self._IPYTHON_PROFILE, "DEFAULT_IPYTHON_PROFILE")
         L.debug("Using %s=%s", self._IPYTHON_PROFILE, profile)
         self.rc = ipyparallel.Client(profile=profile)
+        self.nb_processes = len(self.rc.ids)
         lview = self.rc.load_balanced_view()
 
         def _mapper(func, iterable):
@@ -154,7 +159,7 @@ class DaskFactory(ParallelFactory):
 
     _SCHEDULER_PATH = "PARALLEL_DASK_SCHEDULER_PATH"
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         """Initialize the dask factory."""
         dask_scheduler_path = os.getenv(self._SCHEDULER_PATH)
         if dask_scheduler_path:
@@ -166,6 +171,7 @@ class DaskFactory(ParallelFactory):
             dask_mpi.initialize()
             L.info("Starting dask_mpi...")
             self.client = dask.distributed.Client()
+        self.nb_processes = len(self.client.scheduler_info()["workers"])
         super().__init__()
 
     def shutdown(self):
@@ -189,7 +195,7 @@ class DaskFactory(ParallelFactory):
         return _mapper
 
 
-def init_parallel_factory(parallel_lib):
+def init_parallel_factory(parallel_lib, *args, **kwargs):
     """Return the desired instance of the parallel factory.
 
     The main factories are:
@@ -209,7 +215,7 @@ def init_parallel_factory(parallel_lib):
         parallel_factories["ipyparallel"] = IPyParallelFactory
 
     try:
-        parallel_factory = parallel_factories[parallel_lib]()
+        parallel_factory = parallel_factories[parallel_lib](*args, **kwargs)
     except KeyError:
         L.critical(
             "The %s factory is not available, maybe the required libraries are not properly "
