@@ -1,20 +1,18 @@
 """Module to evaluate generic functions on rows of dataframe."""
 import logging
-import sqlite3
 import sys
 import traceback
 from functools import partial
-from pathlib import Path
 
-import pandas as pd
 from tqdm import tqdm
 
+from bluepyparallel.database import DataBase
 from bluepyparallel.parallel import init_parallel_factory
 
 logger = logging.getLogger(__name__)
 
 
-def _try_evaluation(task, evaluation_function, db_filename, func_args, func_kwargs):
+def _try_evaluation(task, evaluation_function, func_args, func_kwargs):
     """Encapsulate the evaluation function into a try/except and isolate to record exceptions."""
     task_id, task_args = task
     try:
@@ -24,38 +22,7 @@ def _try_evaluation(task, evaluation_function, db_filename, func_args, func_kwar
         result = None
         exception = "".join(traceback.format_exception(*sys.exc_info()))
         logger.exception("Exception for ID=%s: %s", task_id, exception)
-
-    # Save the results into the DB
-    if db_filename is not None:
-        _write_to_sql(db_filename, task_id, result, exception)
     return task_id, result, exception
-
-
-def _create_database(df, db_filename="db.sql"):
-    """Create a sqlite database from dataframe."""
-    with sqlite3.connect(str(db_filename)) as db:
-        df.to_sql("df", db, if_exists="replace", index_label="df_index")
-
-
-def _load_database_to_dataframe(db_filename="db.sql"):
-    """Load an SQL database and construct the dataframe."""
-    with sqlite3.connect(str(db_filename)) as db:
-        return pd.read_sql("SELECT * FROM df", db, index_col="df_index")
-
-
-def _write_to_sql(db_filename, task_id, results, exception):
-    """Write row data to SQL."""
-    with sqlite3.connect(str(db_filename)) as db:
-        if results is not None:
-            keys, vals = zip(*results.items())
-            query_keys = ", ".join([f"{k}=?" for k in keys])
-        else:
-            query_keys = "exception=?"
-            vals = [exception]
-        db.execute(
-            "UPDATE df SET " + query_keys + " WHERE df_index=?",
-            list(vals) + [task_id],
-        )
 
 
 def evaluate(
@@ -64,7 +31,7 @@ def evaluate(
     new_columns=None,
     resume=False,
     parallel_factory=None,
-    db_filename=None,
+    db_url=None,
     func_args=None,
     func_kwargs=None,
 ):
@@ -80,9 +47,11 @@ def evaluate(
         resume (bool): if True, it will use only compute the empty rows of the database,
             if False, it will ecrase or generate the database.
         parallel_factory (ParallelFactory): parallel factory instance.
-        db_filename (str): if a file path is given, SQL backend will be enabled and will use this
-            path for the SQLite database. Should not be used when evaluations are numerous and
-            fast, in order to avoid the overhead of communication with SQL database.
+        db_url (str): should be DB URL that can be interpreted by SQLAlchemy or can be a file path
+            that is interpreted as a SQLite database. If an URL is given, the SQL backend will be
+            enabled to store results and allowing future resume. Should not be used when
+            evaluations are numerous and fast, in order to avoid the overhead of communication with
+            SQL database.
         func_args (list): the arguments to pass to the evaluation_function.
         func_kwargs (dict): the keyword arguments to pass to the evaluation_function.
 
@@ -115,12 +84,16 @@ def evaluate(
         to_evaluate[new_column[0]] = new_column[1]
 
     # Create the database if required and get the task ids to run
-    if db_filename is None:
+    if db_url is None:
         logger.info("Not using SQL backend to save iterations")
-    elif resume:
-        logger.info("Load data from SQL database")
-        if Path(db_filename).exists():
-            previous_results = _load_database_to_dataframe(db_filename=db_filename)
+        db = None
+    else:
+        db = DataBase(db_url)
+
+        if resume and db.exists("df"):
+            logger.info("Load data from SQL database")
+            db.reflect("df")
+            previous_results = db.load()
             previous_idx = previous_results.index
             bad_cols = [
                 col
@@ -134,10 +107,10 @@ def evaluate(
             to_evaluate.loc[previous_results.index] = previous_results.loc[previous_results.index]
             task_ids = task_ids.difference(previous_results.index)
         else:
-            _create_database(to_evaluate, db_filename=db_filename)
-    else:
-        logger.info("Create SQL database")
-        _create_database(to_evaluate, db_filename=db_filename)
+            logger.info("Create SQL database")
+            db.create(to_evaluate)
+
+        db_url = db.get_url()
 
     # Log the number of tasks to run
     if len(task_ids) > 0:
@@ -153,16 +126,21 @@ def evaluate(
     eval_func = partial(
         _try_evaluation,
         evaluation_function=evaluation_function,
-        db_filename=db_filename,
         func_args=func_args,
         func_kwargs=func_kwargs,
     )
 
     # Split the data into rows
-    arg_list = list(to_evaluate.loc[task_ids].to_dict("index").items())
+    arg_list = list(to_evaluate.loc[task_ids, df.columns].to_dict("index").items())
 
     try:
         for task_id, results, exception in tqdm(mapper(eval_func, arg_list), total=len(task_ids)):
+            # Save the results into the DB
+            if db is not None:
+                db.write(
+                    task_id, results, exception, **to_evaluate.loc[task_id, df.columns].to_dict()
+                )
+
             # Save the results into the DataFrame
             if results is not None:
                 to_evaluate.loc[task_id, results.keys()] = list(results.values())

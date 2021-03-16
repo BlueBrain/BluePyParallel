@@ -3,5 +3,5 @@ import pytest
 
 
 @pytest.fixture
-def db_filename(tmpdir):
+def db_url(tmpdir):
     return tmpdir / "db.sql"

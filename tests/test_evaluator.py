@@ -62,9 +62,7 @@ class TestEvaluate:
 
     @pytest.mark.parametrize("with_sql", [True, False])
     @pytest.mark.parametrize("factory_type", [None, "multiprocessing"])
-    def test_evaluate(
-        self, input_df, new_columns, expected_df, db_filename, with_sql, factory_type
-    ):
+    def test_evaluate(self, input_df, new_columns, expected_df, db_url, with_sql, factory_type):
         """Test evaluator on a trivial example."""
         parallel_factory = init_parallel_factory(factory_type)
 
@@ -73,7 +71,7 @@ class TestEvaluate:
             _evaluation_function,
             new_columns,
             parallel_factory=parallel_factory,
-            db_filename=db_filename if with_sql else None,
+            db_url=db_url if with_sql else None,
         )
         if not with_sql:
             remove_sql_cols(expected_df)
@@ -96,7 +94,7 @@ class TestEvaluate:
         input_df,
         new_columns,
         expected_df,
-        db_filename,
+        db_url,
         func_args_kwargs,
         with_sql,
         factory_type,
@@ -110,7 +108,7 @@ class TestEvaluate:
             _evaluation_function,
             new_columns,
             parallel_factory=parallel_factory,
-            db_filename=db_filename if with_sql else None,
+            db_url=db_url if with_sql else None,
             func_args=args,
             func_kwargs=kwargs,
         )
@@ -127,7 +125,7 @@ class TestEvaluate:
         assert_frame_equal(result_df, expected_df, check_like=True)
 
     @pytest.mark.parametrize("factory_type", [None, "multiprocessing"])
-    def test_evaluate_resume(self, input_df, new_columns, expected_df, db_filename, factory_type):
+    def test_evaluate_resume(self, input_df, new_columns, expected_df, db_url, factory_type):
         """Test evaluator on a trivial example."""
         parallel_factory = init_parallel_factory(factory_type)
 
@@ -137,7 +135,7 @@ class TestEvaluate:
             _evaluation_function,
             new_columns,
             parallel_factory=parallel_factory,
-            db_filename=db_filename,
+            db_url=db_url,
         )
 
         # Update the input DF
@@ -150,7 +148,7 @@ class TestEvaluate:
             new_columns,
             resume=True,
             parallel_factory=parallel_factory,
-            db_filename=db_filename,
+            db_url=db_url,
         )
 
         # The values save in the DB should be the same
@@ -161,7 +159,7 @@ class TestEvaluate:
         expected_df.loc[1, "result_orig"] *= 2
         assert_frame_equal(result_df, expected_df, check_like=True)
 
-    def test_evaluate_resume_bad_cols(self, input_df, new_columns, db_filename):
+    def test_evaluate_resume_bad_cols(self, input_df, new_columns, db_url):
         """Test evaluator on a trivial example."""
         parallel_factory = init_parallel_factory(None)
 
@@ -171,7 +169,7 @@ class TestEvaluate:
             _evaluation_function,
             new_columns,
             parallel_factory=parallel_factory,
-            db_filename=db_filename,
+            db_url=db_url,
         )
 
         # Update the input DF
@@ -192,13 +190,11 @@ class TestEvaluate:
                 new_columns,
                 resume=True,
                 parallel_factory=parallel_factory,
-                db_filename=db_filename,
+                db_url=db_url,
             )
 
     @pytest.mark.parametrize("factory_type", [None, "multiprocessing"])
-    def test_evaluate_overwrite_db(
-        self, input_df, new_columns, expected_df, db_filename, factory_type
-    ):
+    def test_evaluate_overwrite_db(self, input_df, new_columns, expected_df, db_url, factory_type):
         """Test evaluator on a trivial example."""
         parallel_factory = init_parallel_factory(factory_type)
 
@@ -212,7 +208,7 @@ class TestEvaluate:
             _evaluation_function,
             new_columns,
             parallel_factory=parallel_factory,
-            db_filename=db_filename,
+            db_url=db_url,
         )
         assert (tmp_df["name"].str.endswith("_previous")).all()
 
@@ -222,7 +218,7 @@ class TestEvaluate:
             _evaluation_function,
             new_columns,
             parallel_factory=parallel_factory,
-            db_filename=db_filename,
+            db_url=db_url,
         )
         assert_frame_equal(result_df, expected_df, check_like=True)
 
@@ -238,7 +234,7 @@ class TestEvaluate:
             input_df,
             new_columns,
             expected_df,
-            db_filename,
+            db_url,
             df_size,
             function_type,
             with_sql,
@@ -262,7 +258,7 @@ class TestEvaluate:
                 func,
                 new_columns,
                 parallel_factory=parallel_factory,
-                db_filename=db_filename if with_sql else None,
+                db_url=db_url if with_sql else None,
             )
             if not with_sql:
                 remove_sql_cols(expected_df)

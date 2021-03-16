@@ -12,6 +12,16 @@ if sys.version_info < (3, 6):
 with open("README.rst", encoding="utf-8") as f:
     README = f.read()
 
+reqs = [
+    "pandas",
+    "ipyparallel",
+    "dask[distributed]>=2.30",
+    "dask-mpi>=2.20",
+    "sqlalchemy<1.4",
+    "sqlalchemy-utils",
+    "tqdm",
+]
+
 doc_reqs = [
     "sphinx-bluebrain-theme",
 ]
@@ -32,13 +42,7 @@ setup(
         "Source": "ssh://bbpcode.epfl.ch/cells/BluePyParallel",
     },
     license="BBP-internal-confidential",
-    install_requires=[
-        "pandas",
-        "ipyparallel",
-        "dask[distributed]>=2.30",
-        "dask-mpi>=2.20",
-        "tqdm",
-    ],
+    install_requires=reqs,
     extras_require={
         "docs": doc_reqs,
     },
