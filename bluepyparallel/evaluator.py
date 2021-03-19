@@ -4,6 +4,7 @@ import sys
 import traceback
 from functools import partial
 
+import pandas as pd
 from tqdm import tqdm
 
 from bluepyparallel.database import DataBase
@@ -19,7 +20,7 @@ def _try_evaluation(task, evaluation_function, func_args, func_kwargs):
         result = evaluation_function(task_args, *func_args, **func_kwargs)
         exception = None
     except Exception:  # pylint: disable=broad-except
-        result = None
+        result = {}
         exception = "".join(traceback.format_exception(*sys.exc_info()))
         logger.exception("Exception for ID=%s: %s", task_id, exception)
     return task_id, result, exception
@@ -34,6 +35,7 @@ def evaluate(
     db_url=None,
     func_args=None,
     func_kwargs=None,
+    **mapper_kwargs,
 ):
     """Evaluate and save results in a sqlite database on the fly and return dataframe.
 
@@ -54,6 +56,8 @@ def evaluate(
             SQL database.
         func_args (list): the arguments to pass to the evaluation_function.
         func_kwargs (dict): the keyword arguments to pass to the evaluation_function.
+        **mapper_kwargs: the keyword arguments are passed to the get_mapper() method of the
+            :class:`ParallelFactory` instance.
 
     Return:
         pandas.DataFrame: dataframe with new columns containing the computed results.
@@ -61,7 +65,6 @@ def evaluate(
     # Initialize the parallel factory
     if isinstance(parallel_factory, str) or parallel_factory is None:
         parallel_factory = init_parallel_factory(parallel_factory)
-
     # Set default args
     if func_args is None:
         func_args = []
@@ -73,6 +76,10 @@ def evaluate(
     # Shallow copy the given DataFrame to add internal rows
     to_evaluate = df.copy()
     task_ids = to_evaluate.index
+
+    if "exception" in to_evaluate.columns:
+        logger.warning("The exception column is going to be replaced")
+        to_evaluate = to_evaluate.drop(columns=["exception"])
 
     # Set default new columns
     if new_columns is None:
@@ -120,7 +127,7 @@ def evaluate(
         return to_evaluate
 
     # Get the factory mapper
-    mapper = parallel_factory.get_mapper()
+    mapper = parallel_factory.get_mapper(**mapper_kwargs)
 
     # Setup the function to apply to the data
     eval_func = partial(
@@ -134,18 +141,23 @@ def evaluate(
     arg_list = list(to_evaluate.loc[task_ids, df.columns].to_dict("index").items())
 
     try:
-        for task_id, results, exception in tqdm(mapper(eval_func, arg_list), total=len(task_ids)):
+        res = []
+
+        # Collect the results
+        for task_id, result, exception in tqdm(mapper(eval_func, arg_list), total=len(task_ids)):
+            res.append(dict({"df_index": task_id, "exception": exception}, **result))
+
             # Save the results into the DB
             if db is not None:
                 db.write(
-                    task_id, results, exception, **to_evaluate.loc[task_id, df.columns].to_dict()
+                    task_id, result, exception, **to_evaluate.loc[task_id, df.columns].to_dict()
                 )
 
-            # Save the results into the DataFrame
-            if results is not None:
-                to_evaluate.loc[task_id, results.keys()] = list(results.values())
-            elif exception is not None:
-                to_evaluate.loc[task_id, "exception"] = exception
+        # Gather the results to the output DataFrame
+        res_df = pd.DataFrame(res)
+        res_df.set_index("df_index", inplace=True)
+        to_evaluate.loc[res_df.index, res_df.columns] = res_df
+
     except (KeyboardInterrupt, SystemExit) as ex:
         # To save dataframe even if program is killed
         logger.warning("Stopping mapper loop. Reason: %r", ex)

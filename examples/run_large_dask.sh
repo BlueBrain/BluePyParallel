@@ -16,9 +16,8 @@ module load unstable py-dask-mpi
 module load unstable py-bglibpy
 module load unstable neurodamus-neocortex
 
-deactivate
-. venv/bin/activate
+. ~/base/bin/activate
 
 unset PMI_RANK
 
-srun python large_computation.py dask
+srun python large_computation.py dask 100000 1000

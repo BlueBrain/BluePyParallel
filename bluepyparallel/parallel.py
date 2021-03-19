@@ -33,18 +33,46 @@ class ParallelFactory:
     """Abstract class that should be subclassed to provide parallel functions."""
 
     _BATCH_SIZE = "PARALLEL_BATCH_SIZE"
+    _CHUNK_SIZE = "PARALLEL_CHUNK_SIZE"
 
-    def __init__(self, *args, batch_size=None, **kwargs):  # pylint: disable=unused-argument
+    # pylint: disable=unused-argument
+    def __init__(self, batch_size=None, chunk_size=None, **kwargs):
         self.batch_size = batch_size or int(os.getenv(self._BATCH_SIZE, "0")) or None
-        self.nb_processes = 1
         L.info("Using %s=%s", self._BATCH_SIZE, self.batch_size)
 
+        self.chunk_size = batch_size or int(os.getenv(self._CHUNK_SIZE, "0")) or None
+        L.info("Using %s=%s", self._CHUNK_SIZE, self.chunk_size)
+
+        self.nb_processes = 1
+
     @abstractmethod
-    def get_mapper(self):
+    def get_mapper(self, batch_size=None, chunk_size=None, **kwargs):
         """Return a mapper function that can be used to execute functions in parallel."""
 
     def shutdown(self):
         """Can be used to cleanup."""
+
+    def _with_batches(self, mapper, func, iterable, batch_size=None):
+        """Wrapper on mapper function creating batches of iterable to give to mapper.
+
+        The batch_size is an int corresponding to the number of evaluation in each batch/
+        """
+        if isinstance(iterable, Iterator):
+            iterable = list(iterable)
+
+        batch_size = batch_size or self.batch_size
+        if batch_size is not None:
+            iterables = np.array_split(iterable, len(iterable) // min(batch_size, len(iterable)))
+        else:
+            iterables = [iterable]
+
+        for _iterable in iterables:
+            yield from mapper(func, _iterable)
+
+    def _chunksize_to_kwargs(self, chunk_size, kwargs, label="chunk_size"):
+        chunk_size = chunk_size or self.chunk_size
+        if chunk_size is not None:
+            kwargs[label] = chunk_size
 
 
 class NoDaemonProcess(multiprocessing.Process):
@@ -72,26 +100,10 @@ class NestedPool(Pool):  # pylint: disable=abstract-method
     Process = NoDaemonProcess
 
 
-def _with_batches(mapper, func, iterable, batch_size=None):
-    """Wrapper on mapper function creating batches of iterable to give to mapper.
-
-    The batch_size is an int corresponding to the number of evaluation in each batch/
-    """
-    if isinstance(iterable, Iterator):
-        iterable = list(iterable)
-    if batch_size is not None:
-        iterables = np.array_split(iterable, len(iterable) // min(batch_size, len(iterable)))
-    else:
-        iterables = [iterable]
-
-    for _iterable in iterables:
-        yield from mapper(func, _iterable)
-
-
 class SerialFactory(ParallelFactory):
     """Factory that do not work in parallel."""
 
-    def get_mapper(self):
+    def get_mapper(self, batch_size=None, chunk_size=None, **kwargs):
         """Get a map."""
         return map
 
@@ -101,18 +113,24 @@ class MultiprocessingFactory(ParallelFactory):
 
     _CHUNKSIZE = "PARALLEL_CHUNKSIZE"
 
-    def __init__(self, *args, processes=None, **kwargs):
+    def __init__(self, processes=None, **kwargs):
         """Initialize multiprocessing factory."""
 
-        super().__init__()
-        self.pool = NestedPool(*args, **kwargs)
+        super().__init__(**kwargs)
+
+        self.pool = NestedPool(processes=processes)
         self.nb_processes = processes or os.cpu_count()
 
-    def get_mapper(self):
+    def get_mapper(self, batch_size=None, chunk_size=None, **kwargs):
         """Get a NestedPool."""
+        self._chunksize_to_kwargs(chunk_size, kwargs)
 
         def _mapper(func, iterable):
-            return _with_batches(self.pool.imap_unordered, func, iterable, self.batch_size)
+            return self._with_batches(
+                partial(self.pool.imap_unordered, **kwargs),
+                func,
+                iterable,
+            )
 
         return _mapper
 
@@ -126,24 +144,29 @@ class IPyParallelFactory(ParallelFactory):
 
     _IPYTHON_PROFILE = "IPYTHON_PROFILE"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs):
         """Initialize the ipyparallel factory."""
 
-        super().__init__()
+        super().__init__(**kwargs)
         self.rc = None
         self.nb_processes = 1
 
-    def get_mapper(self):
+    def get_mapper(self, batch_size=None, chunk_size=None, **kwargs):
         """Get an ipyparallel mapper using the profile name provided."""
-        profile = os.getenv(self._IPYTHON_PROFILE, "DEFAULT_IPYTHON_PROFILE")
+        profile = os.getenv(self._IPYTHON_PROFILE, None)
         L.debug("Using %s=%s", self._IPYTHON_PROFILE, profile)
         self.rc = ipyparallel.Client(profile=profile)
         self.nb_processes = len(self.rc.ids)
         lview = self.rc.load_balanced_view()
 
+        if "ordered" not in kwargs:
+            kwargs["ordered"] = False
+
+        self._chunksize_to_kwargs(chunk_size, kwargs)
+
         def _mapper(func, iterable):
-            return _with_batches(
-                partial(lview.imap, ordered=False), func, iterable, self.batch_size
+            return self._with_batches(
+                partial(lview.imap, **kwargs), func, iterable, batch_size=batch_size
             )
 
         return _mapper
@@ -159,7 +182,7 @@ class DaskFactory(ParallelFactory):
 
     _SCHEDULER_PATH = "PARALLEL_DASK_SCHEDULER_PATH"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs):
         """Initialize the dask factory."""
         dask_scheduler_path = os.getenv(self._SCHEDULER_PATH)
         if dask_scheduler_path:
@@ -172,7 +195,7 @@ class DaskFactory(ParallelFactory):
             L.info("Starting dask_mpi...")
             self.client = dask.distributed.Client()
         self.nb_processes = len(self.client.scheduler_info()["workers"])
-        super().__init__()
+        super().__init__(**kwargs)
 
     def shutdown(self):
         """Retire the workers on the scheduler."""
@@ -181,16 +204,17 @@ class DaskFactory(ParallelFactory):
             self.client.retire_workers()
             self.client = None
 
-    def get_mapper(self):
+    def get_mapper(self, batch_size=None, chunk_size=None, **kwargs):
         """Get a Dask mapper."""
+        self._chunksize_to_kwargs(chunk_size, kwargs, label="batch_size")
 
         def _mapper(func, iterable):
             def _dask_mapper(func, iterable):
-                futures = self.client.map(func, iterable)
+                futures = self.client.map(func, iterable, **kwargs)
                 for _future, result in dask.distributed.as_completed(futures, with_results=True):
                     yield result
 
-            return _with_batches(_dask_mapper, func, iterable, self.batch_size)
+            return self._with_batches(_dask_mapper, func, iterable, batch_size=batch_size)
 
         return _mapper
 
