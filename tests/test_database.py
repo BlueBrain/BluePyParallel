@@ -6,10 +6,33 @@ from sqlalchemy import MetaData
 from sqlalchemy import Table
 from sqlalchemy import create_engine
 from sqlalchemy import select
+from sqlalchemy.exc import OperationalError
 
 from bluepyparallel import database
 
-URLS = ["/tmpdir/test.db", "sqlite:////tmpdir/test.db"]
+URLS = [
+    "/tmpdir/test.db",
+    "sqlite:////tmpdir/test.db",
+]
+try:
+    # Set up the PostGIS database:
+    #   Create the ``test_bpp`` role::
+    #     $ sudo -u postgres psql -c "CREATE ROLE test_bpp PASSWORD 'test_bpp' SUPERUSER CREATEDB
+    #       CREATEROLE INHERIT LOGIN;"
+    #   Create the ``test_bpp`` database::
+    #     $ sudo -u postgres createdb -E UTF-8 test_bpp
+    #     $ sudo -u postgres psql -d test_bpp -c 'CREATE SCHEMA test_bpp;'
+    #     $ sudo -u postgres psql -c 'GRANT CREATE ON DATABASE test_bpp TO "test_bpp";'
+    #     $ sudo -u postgres psql -d test_bpp -c 'GRANT USAGE,CREATE ON SCHEMA test_bpp TO
+    #       "test_bpp";'
+    PG_URL = "postgresql://test_bpp:test_bpp@localhost/test_bpp"
+    create_engine(PG_URL).connect()
+    URLS.append(PG_URL)
+except OperationalError:
+    pass
+except ModuleNotFoundError as e:
+    if "psycopg2" not in str(e):
+        raise
 
 
 @pytest.fixture(params=URLS)

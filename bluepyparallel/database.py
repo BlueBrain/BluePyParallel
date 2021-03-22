@@ -32,6 +32,9 @@ class DataBase:
         self.metadata = None
         self.table = None
 
+    def __del__(self):
+        self.connection.close()
+
     def get_url(self):
         return self.engine.url
 
