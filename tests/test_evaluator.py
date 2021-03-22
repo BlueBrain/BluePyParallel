@@ -61,11 +61,8 @@ class TestEvaluate:
     """Test the bluepyparallel.evaluator.evaluate function."""
 
     @pytest.mark.parametrize("with_sql", [True, False])
-    @pytest.mark.parametrize("factory_type", [None, "multiprocessing"])
-    def test_evaluate(self, input_df, new_columns, expected_df, db_url, with_sql, factory_type):
+    def test_evaluate(self, input_df, new_columns, expected_df, db_url, with_sql, parallel_factory):
         """Test evaluator on a trivial example."""
-        parallel_factory = init_parallel_factory(factory_type)
-
         result_df = evaluate(
             input_df,
             _evaluation_function,
@@ -88,7 +85,6 @@ class TestEvaluate:
         ],
     )
     @pytest.mark.parametrize("with_sql", [True, False])
-    @pytest.mark.parametrize("factory_type", [None, "multiprocessing"])
     def test_evaluate_args_kwargs(
         self,
         input_df,
@@ -97,10 +93,9 @@ class TestEvaluate:
         db_url,
         func_args_kwargs,
         with_sql,
-        factory_type,
+        parallel_factory,
     ):
         """Test evaluator on a trivial example with passing args or kwargs."""
-        parallel_factory = init_parallel_factory(factory_type)
         args, kwargs = deepcopy(func_args_kwargs)
 
         result_df = evaluate(
@@ -124,11 +119,8 @@ class TestEvaluate:
 
         assert_frame_equal(result_df, expected_df, check_like=True)
 
-    @pytest.mark.parametrize("factory_type", [None, "multiprocessing"])
-    def test_evaluate_resume(self, input_df, new_columns, expected_df, db_url, factory_type):
+    def test_evaluate_resume(self, input_df, new_columns, expected_df, db_url, parallel_factory):
         """Test evaluator on a trivial example."""
-        parallel_factory = init_parallel_factory(factory_type)
-
         # Compute some values
         tmp_df = evaluate(
             input_df.loc[[0, 2]],
@@ -193,11 +185,10 @@ class TestEvaluate:
                 db_url=db_url,
             )
 
-    @pytest.mark.parametrize("factory_type", [None, "multiprocessing"])
-    def test_evaluate_overwrite_db(self, input_df, new_columns, expected_df, db_url, factory_type):
+    def test_evaluate_overwrite_db(
+        self, input_df, new_columns, expected_df, db_url, parallel_factory
+    ):
         """Test evaluator on a trivial example."""
-        parallel_factory = init_parallel_factory(factory_type)
-
         # Compute once
         previous_df = input_df.copy(deep=True)
         previous_df["name"] += "_previous"
@@ -228,7 +219,6 @@ class TestEvaluate:
         @pytest.mark.parametrize("df_size", ["small", "big"])
         @pytest.mark.parametrize("function_type", ["fast", "slow"])
         @pytest.mark.parametrize("with_sql", [True, False])
-        @pytest.mark.parametrize("factory_type", [None, "multiprocessing"])
         def test_evaluate(
             self,
             input_df,
@@ -238,12 +228,10 @@ class TestEvaluate:
             df_size,
             function_type,
             with_sql,
-            factory_type,
+            parallel_factory,
             benchmark,
         ):
             """Test evaluator on a trivial example."""
-            parallel_factory = init_parallel_factory(factory_type, processes=None)
-
             if df_size == "big":
                 input_df = input_df.loc[np.repeat(input_df.index.values, 50)].reset_index(drop=True)
                 expected_df = expected_df.loc[np.repeat(expected_df.index.values, 50)].reset_index(

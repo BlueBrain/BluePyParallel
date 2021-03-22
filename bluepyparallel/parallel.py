@@ -2,7 +2,6 @@
 import logging
 import multiprocessing
 import os
-import time
 from abc import abstractmethod
 from collections.abc import Iterator
 from functools import partial
@@ -36,14 +35,19 @@ class ParallelFactory:
     _CHUNK_SIZE = "PARALLEL_CHUNK_SIZE"
 
     # pylint: disable=unused-argument
-    def __init__(self, batch_size=None, chunk_size=None, **kwargs):
+    def __init__(self, batch_size=None, chunk_size=None):
         self.batch_size = batch_size or int(os.getenv(self._BATCH_SIZE, "0")) or None
         L.info("Using %s=%s", self._BATCH_SIZE, self.batch_size)
 
         self.chunk_size = batch_size or int(os.getenv(self._CHUNK_SIZE, "0")) or None
         L.info("Using %s=%s", self._CHUNK_SIZE, self.chunk_size)
 
-        self.nb_processes = 1
+        if not hasattr(self, "nb_processes"):
+            self.nb_processes = 1
+
+    def __del__(self):
+        """Call the shutdown method."""
+        self.shutdown()
 
     @abstractmethod
     def get_mapper(self, batch_size=None, chunk_size=None, **kwargs):
@@ -62,7 +66,12 @@ class ParallelFactory:
 
         batch_size = batch_size or self.batch_size
         if batch_size is not None:
-            iterables = np.array_split(iterable, len(iterable) // min(batch_size, len(iterable)))
+            iterables = [
+                _iterable.tolist()
+                for _iterable in np.array_split(
+                    iterable, len(iterable) // min(batch_size, len(iterable))
+                )
+            ]
         else:
             iterables = [iterable]
 
@@ -113,17 +122,17 @@ class MultiprocessingFactory(ParallelFactory):
 
     _CHUNKSIZE = "PARALLEL_CHUNKSIZE"
 
-    def __init__(self, processes=None, **kwargs):
+    def __init__(self, batch_size=None, chunk_size=None, processes=None, **kwargs):
         """Initialize multiprocessing factory."""
 
-        super().__init__(**kwargs)
+        super().__init__(batch_size, chunk_size)
 
-        self.pool = NestedPool(processes=processes)
         self.nb_processes = processes or os.cpu_count()
+        self.pool = NestedPool(processes=self.nb_processes, **kwargs)
 
     def get_mapper(self, batch_size=None, chunk_size=None, **kwargs):
         """Get a NestedPool."""
-        self._chunksize_to_kwargs(chunk_size, kwargs)
+        self._chunksize_to_kwargs(chunk_size, kwargs, label="chunksize")
 
         def _mapper(func, iterable):
             return self._with_batches(
@@ -144,21 +153,17 @@ class IPyParallelFactory(ParallelFactory):
 
     _IPYTHON_PROFILE = "IPYTHON_PROFILE"
 
-    def __init__(self, **kwargs):
+    def __init__(self, batch_size=None, chunk_size=None, profile=None, **kwargs):
         """Initialize the ipyparallel factory."""
-
-        super().__init__(**kwargs)
-        self.rc = None
-        self.nb_processes = 1
+        profile = profile or os.getenv(self._IPYTHON_PROFILE, None)
+        L.debug("Using %s=%s", self._IPYTHON_PROFILE, profile)
+        self.rc = ipyparallel.Client(profile=profile, **kwargs)
+        self.nb_processes = len(self.rc.ids)
+        self.lview = self.rc.load_balanced_view()
+        super().__init__(batch_size, chunk_size)
 
     def get_mapper(self, batch_size=None, chunk_size=None, **kwargs):
         """Get an ipyparallel mapper using the profile name provided."""
-        profile = os.getenv(self._IPYTHON_PROFILE, None)
-        L.debug("Using %s=%s", self._IPYTHON_PROFILE, profile)
-        self.rc = ipyparallel.Client(profile=profile)
-        self.nb_processes = len(self.rc.ids)
-        lview = self.rc.load_balanced_view()
-
         if "ordered" not in kwargs:
             kwargs["ordered"] = False
 
@@ -166,7 +171,7 @@ class IPyParallelFactory(ParallelFactory):
 
         def _mapper(func, iterable):
             return self._with_batches(
-                partial(lview.imap, **kwargs), func, iterable, batch_size=batch_size
+                partial(self.lview.imap, **kwargs), func, iterable, batch_size=batch_size
             )
 
         return _mapper
@@ -182,27 +187,34 @@ class DaskFactory(ParallelFactory):
 
     _SCHEDULER_PATH = "PARALLEL_DASK_SCHEDULER_PATH"
 
-    def __init__(self, **kwargs):
+    def __init__(
+        self, batch_size=None, chunk_size=None, scheduler_file=None, address=None, **kwargs
+    ):
         """Initialize the dask factory."""
-        dask_scheduler_path = os.getenv(self._SCHEDULER_PATH)
+        dask_scheduler_path = scheduler_file or os.getenv(self._SCHEDULER_PATH)
+        self.interactive = True
         if dask_scheduler_path:
-            self.interactive = True
             L.info("Connecting dask_mpi with scheduler %s", dask_scheduler_path)
-            self.client = dask.distributed.Client(scheduler_file=dask_scheduler_path)
-        else:
+        if address:
+            L.info("Connecting dask_mpi with address %s", address)
+        if not dask_scheduler_path and not address:
             self.interactive = False
-            dask_mpi.initialize()
             L.info("Starting dask_mpi...")
-            self.client = dask.distributed.Client()
+            dask_mpi.initialize()
+        self.client = dask.distributed.Client(
+            address=address,
+            scheduler_file=dask_scheduler_path,
+            **kwargs,
+        )
         self.nb_processes = len(self.client.scheduler_info()["workers"])
-        super().__init__(**kwargs)
+        super().__init__(batch_size, chunk_size)
 
     def shutdown(self):
-        """Retire the workers on the scheduler."""
+        """Close the scheduler and the cluster if it was created by the factory."""
+        cluster = self.client.cluster
+        self.client.close()
         if not self.interactive:
-            time.sleep(1)
-            self.client.retire_workers()
-            self.client = None
+            cluster.close()
 
     def get_mapper(self, batch_size=None, chunk_size=None, **kwargs):
         """Get a Dask mapper."""

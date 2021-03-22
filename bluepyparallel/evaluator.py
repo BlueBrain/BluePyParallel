@@ -73,13 +73,14 @@ def evaluate(
     if func_kwargs is None:
         func_kwargs = {}
 
+    # Drop exception column if present
+    if "exception" in df.columns:
+        logger.warning("The 'exception' column is going to be replaced")
+        df = df.drop(columns=["exception"])
+
     # Shallow copy the given DataFrame to add internal rows
     to_evaluate = df.copy()
     task_ids = to_evaluate.index
-
-    if "exception" in to_evaluate.columns:
-        logger.warning("The exception column is going to be replaced")
-        to_evaluate = to_evaluate.drop(columns=["exception"])
 
     # Set default new columns
     if new_columns is None:
