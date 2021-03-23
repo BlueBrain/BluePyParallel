@@ -199,8 +199,8 @@ class DaskFactory(ParallelFactory):
             L.info("Connecting dask_mpi with address %s", address)
         if not dask_scheduler_path and not address:
             self.interactive = False
-            L.info("Starting dask_mpi...")
             dask_mpi.initialize()
+            L.info("Starting dask_mpi...")
         self.client = dask.distributed.Client(
             address=address,
             scheduler_file=dask_scheduler_path,
