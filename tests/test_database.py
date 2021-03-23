@@ -1,18 +1,22 @@
 """Test the bluepyparallel.evaluator module"""
 # pylint: disable=redefined-outer-name
+import os
+from uuid import uuid4
+
 import pandas as pd
 import pytest
 from sqlalchemy import MetaData
 from sqlalchemy import Table
 from sqlalchemy import create_engine
+from sqlalchemy import schema
 from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
 
 from bluepyparallel import database
 
 URLS = [
-    "/tmpdir/test.db",
-    "sqlite:////tmpdir/test.db",
+    "/tmpdir/test_bpp.db",
+    "sqlite:////tmpdir/test_bpp.db",
 ]
 try:
     # Set up the PostGIS database:
@@ -28,9 +32,11 @@ try:
     PG_URL = "postgresql://test_bpp:test_bpp@localhost/test_bpp"
     create_engine(PG_URL).connect()
     URLS.append(PG_URL)
+    with_postresql = True
 except OperationalError:
-    pass
+    with_postresql = False
 except ModuleNotFoundError as e:
+    with_postresql = False
     if "psycopg2" not in str(e):
         raise
 
@@ -61,12 +67,48 @@ def small_db(url, small_df):
     return db
 
 
+@pytest.fixture()
+def autoremoved_schema():
+    schema_name = str(uuid4())
+    yield schema_name
+    engine = create_engine(PG_URL)
+    engine.execute(schema.DropSchema(schema_name, cascade=True))
+
+
 class TestDataBase:
     """Test the DataBase class."""
 
     @pytest.mark.parametrize("table_name", [None, "df", "df_name"])
-    @pytest.mark.parametrize("schema_name", [None])
-    def test_create(self, url, small_df, table_name, schema_name):
+    def test_create(self, url, small_df, table_name):
+        db = database.DataBase(url)
+        db.create(small_df, table_name)
+
+        # Check DB
+        if url.startswith("/"):
+            url = "sqlite:///" + url
+        engine = create_engine(url)
+        conn = engine.connect()
+        metadata = MetaData()
+        table = Table(
+            table_name or "df",
+            metadata,
+            autoload=True,
+            autoload_with=engine,
+        )
+
+        # Check reflected table
+        assert str(table.c.items()) == str(db.table.c.items())
+
+        # Check elements inserted into the DB
+        query = select([table])
+        res = conn.execute(query).fetchall()
+        assert res == []
+
+    @pytest.mark.parametrize("table_name", [None, "df", "df_name"])
+    @pytest.mark.skipif(not with_postresql, reason="Only tested with PostgreSQL")
+    def test_create_with_schema(self, small_df, table_name, autoremoved_schema):
+        schema_name = autoremoved_schema
+        url = PG_URL
         db = database.DataBase(url)
         db.create(small_df, table_name, schema_name)
 
@@ -91,6 +133,25 @@ class TestDataBase:
         query = select([table])
         res = conn.execute(query).fetchall()
         assert res == []
+
+    def test_db_exists(self, tmpdir):
+        # Ensure that the DB does not exist
+        url = URLS[1].replace("/tmpdir", str(tmpdir))
+        engine = create_engine(url)
+        if os.path.isfile(engine.url.database):
+            os.remove(engine.url.database)
+
+        # Setup the DB
+        db = database.DataBase(url)
+
+        # Test that the DB does not exist
+        assert not db.db_exists()
+
+        # Create the DB
+        db = database.DataBase(url, create=True)
+
+        # Test that the DB does exist
+        assert db.db_exists()
 
     def test_exists(self, small_db):
         assert small_db.exists("df")

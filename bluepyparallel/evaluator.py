@@ -84,7 +84,7 @@ def evaluate(
 
     # Set default new columns
     if new_columns is None:
-        new_columns = [["data", ""]]
+        new_columns = []
 
     # Setup internal and new columns
     to_evaluate["exception"] = None
@@ -141,10 +141,9 @@ def evaluate(
     # Split the data into rows
     arg_list = list(to_evaluate.loc[task_ids, df.columns].to_dict("index").items())
 
+    res = []
     try:
-        res = []
-
-        # Collect the results
+        # Compute and collect the results
         for task_id, result, exception in tqdm(mapper(eval_func, arg_list), total=len(task_ids)):
             res.append(dict({"df_index": task_id, "exception": exception}, **result))
 
@@ -154,13 +153,13 @@ def evaluate(
                     task_id, result, exception, **to_evaluate.loc[task_id, df.columns].to_dict()
                 )
 
-        # Gather the results to the output DataFrame
-        res_df = pd.DataFrame(res)
-        res_df.set_index("df_index", inplace=True)
-        to_evaluate.loc[res_df.index, res_df.columns] = res_df
-
     except (KeyboardInterrupt, SystemExit) as ex:
         # To save dataframe even if program is killed
         logger.warning("Stopping mapper loop. Reason: %r", ex)
+
+    # Gather the results to the output DataFrame
+    res_df = pd.DataFrame(res)
+    res_df.set_index("df_index", inplace=True)
+    to_evaluate.loc[res_df.index, res_df.columns] = res_df
 
     return to_evaluate

@@ -26,7 +26,7 @@ doc_reqs = [
     "sphinx-bluebrain-theme",
 ]
 
-VERSION = imp.load_source("", "bluepyparallel/version.py").__version__
+VERSION = imp.load_source("", "bluepyparallel/version.py").VERSION
 
 setup(
     name="BluePyParallel",

@@ -1,3 +1,4 @@
 """BluePyParallel functions."""
-from .evaluator import evaluate  # noqa
-from .parallel import init_parallel_factory  # noqa
+from bluepyparallel.evaluator import evaluate  # noqa
+from bluepyparallel.parallel import init_parallel_factory  # noqa
+from bluepyparallel.version import VERSION as __version__  # noqa

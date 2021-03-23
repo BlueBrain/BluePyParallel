@@ -1,4 +1,3 @@
-"""Package version """
-
-VERSION = "0.0.3.dev0"
-__version__ = VERSION
+"""Package version"""
+# pragma: no cover
+VERSION = "0.0.3.dev1"

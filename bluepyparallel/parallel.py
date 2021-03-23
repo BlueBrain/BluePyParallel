@@ -14,18 +14,23 @@ try:
     import dask_mpi
 
     dask_available = True
-except ImportError:
+except ImportError:  # pragma: no cover
     dask_available = False
 
 try:
     import ipyparallel
 
     ipyparallel_available = True
-except ImportError:
+except ImportError:  # pragma: no cover
     ipyparallel_available = False
 
 
 L = logging.getLogger(__name__)
+
+
+def _func_wrapper(data, func, func_args, func_kwargs):
+    """Function wrapper used to pass args and kwargs."""
+    return func(data, *func_args, **func_kwargs)
 
 
 class ParallelFactory:
@@ -55,6 +60,10 @@ class ParallelFactory:
 
     def shutdown(self):
         """Can be used to cleanup."""
+
+    def mappable_func(self, func, *args, **kwargs):
+        """Can be used to add args and kwargs to a function before calling the mapper."""
+        return partial(_func_wrapper, func=func, func_args=args, func_kwargs=kwargs)
 
     def _with_batches(self, mapper, func, iterable, batch_size=None):
         """Wrapper on mapper function creating batches of iterable to give to mapper.
@@ -95,7 +104,7 @@ class NoDaemonProcess(multiprocessing.Process):
 
     def _get_daemon(self):  # pylint: disable=no-self-use
         """Get daemon flag"""
-        return False
+        return False  # pragma: no cover
 
     def _set_daemon(self, value):
         """Set daemon flag"""
@@ -114,7 +123,12 @@ class SerialFactory(ParallelFactory):
 
     def get_mapper(self, batch_size=None, chunk_size=None, **kwargs):
         """Get a map."""
-        return map
+
+        def _mapper(func, iterable, *func_args, **func_kwargs):
+            func = self.mappable_func(func, *func_args, **func_kwargs)
+            return self._with_batches(map, func, iterable)
+
+        return _mapper
 
 
 class MultiprocessingFactory(ParallelFactory):
@@ -134,7 +148,8 @@ class MultiprocessingFactory(ParallelFactory):
         """Get a NestedPool."""
         self._chunksize_to_kwargs(chunk_size, kwargs, label="chunksize")
 
-        def _mapper(func, iterable):
+        def _mapper(func, iterable, *func_args, **func_kwargs):
+            func = self.mappable_func(func, *func_args, **func_kwargs)
             return self._with_batches(
                 partial(self.pool.imap_unordered, **kwargs),
                 func,
@@ -164,12 +179,13 @@ class IPyParallelFactory(ParallelFactory):
 
     def get_mapper(self, batch_size=None, chunk_size=None, **kwargs):
         """Get an ipyparallel mapper using the profile name provided."""
-        if "ordered" not in kwargs:
+        if "ordered" not in kwargs:  # pragma: no cover
             kwargs["ordered"] = False
 
         self._chunksize_to_kwargs(chunk_size, kwargs)
 
-        def _mapper(func, iterable):
+        def _mapper(func, iterable, *func_args, **func_kwargs):
+            func = self.mappable_func(func, *func_args, **func_kwargs)
             return self._with_batches(
                 partial(self.lview.imap, **kwargs), func, iterable, batch_size=batch_size
             )
@@ -178,7 +194,7 @@ class IPyParallelFactory(ParallelFactory):
 
     def shutdown(self):
         """Remove zmq."""
-        if self.rc is not None:
+        if self.rc is not None:  # pragma: no cover
             self.rc.close()
 
 
@@ -193,11 +209,11 @@ class DaskFactory(ParallelFactory):
         """Initialize the dask factory."""
         dask_scheduler_path = scheduler_file or os.getenv(self._SCHEDULER_PATH)
         self.interactive = True
-        if dask_scheduler_path:
+        if dask_scheduler_path:  # pragma: no cover
             L.info("Connecting dask_mpi with scheduler %s", dask_scheduler_path)
-        if address:
+        if address:  # pragma: no cover
             L.info("Connecting dask_mpi with address %s", address)
-        if not dask_scheduler_path and not address:
+        if not dask_scheduler_path and not address:  # pragma: no cover
             self.interactive = False
             dask_mpi.initialize()
             L.info("Starting dask_mpi...")
@@ -213,19 +229,20 @@ class DaskFactory(ParallelFactory):
         """Close the scheduler and the cluster if it was created by the factory."""
         cluster = self.client.cluster
         self.client.close()
-        if not self.interactive:
+        if not self.interactive:  # pragma: no cover
             cluster.close()
 
     def get_mapper(self, batch_size=None, chunk_size=None, **kwargs):
         """Get a Dask mapper."""
         self._chunksize_to_kwargs(chunk_size, kwargs, label="batch_size")
 
-        def _mapper(func, iterable):
-            def _dask_mapper(func, iterable):
+        def _mapper(func, iterable, *func_args, **func_kwargs):
+            def _dask_mapper(func, iterable, **kwargs):
                 futures = self.client.map(func, iterable, **kwargs)
                 for _future, result in dask.distributed.as_completed(futures, with_results=True):
                     yield result
 
+            func = self.mappable_func(func, *func_args, **func_kwargs)
             return self._with_batches(_dask_mapper, func, iterable, batch_size=batch_size)
 
         return _mapper
@@ -245,9 +262,9 @@ def init_parallel_factory(parallel_lib, *args, **kwargs):
         None: SerialFactory,
         "multiprocessing": MultiprocessingFactory,
     }
-    if dask_available:
+    if dask_available:  # pragma: no cover
         parallel_factories["dask"] = DaskFactory
-    if ipyparallel_available:
+    if ipyparallel_available:  # pragma: no cover
         parallel_factories["ipyparallel"] = IPyParallelFactory
 
     try:

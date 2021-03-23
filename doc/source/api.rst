@@ -7,3 +7,4 @@ API Documentation
     bluepyparallel
     bluepyparallel.parallel
     bluepyparallel.evaluator
+    bluepyparallel.database
