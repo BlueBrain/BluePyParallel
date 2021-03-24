@@ -40,20 +40,20 @@ def evaluate(
     """Evaluate and save results in a sqlite database on the fly and return dataframe.
 
     Args:
-        df (DataFrame): each row contains information for the computation.
-        evaluation_function (function): function used to evaluate each row,
+        df (pandas.DataFrame): each row contains information for the computation.
+        evaluation_function (callable): function used to evaluate each row,
             should have a single argument as list-like containing values of the rows of df,
             and return a dict with keys corresponding to the names in new_columns.
         new_columns (list): list of names of new column and empty value to save evaluation results,
-            i.e.: [['result', 0.0], ['valid', False]].
-        resume (bool): if True, it will use only compute the empty rows of the database,
-            if False, it will ecrase or generate the database.
-        parallel_factory (ParallelFactory): parallel factory instance.
-        db_url (str): should be DB URL that can be interpreted by SQLAlchemy or can be a file path
-            that is interpreted as a SQLite database. If an URL is given, the SQL backend will be
-            enabled to store results and allowing future resume. Should not be used when
-            evaluations are numerous and fast, in order to avoid the overhead of communication with
-            SQL database.
+            i.e.: :code:`[['result', 0.0], ['valid', False]]`.
+        resume (bool): if :obj:`True` and ``db_url`` is provided, it will use only compute the
+            missing rows of the database.
+        parallel_factory (ParallelFactory or str): parallel factory name or instance.
+        db_url (str): should be DB URL that can be interpreted by :func:`sqlalchemy.create_engine`
+            or can be a file path that is interpreted as a SQLite database. If an URL is given,
+            the SQL backend will be enabled to store results and allowing future resume. Should
+            not be used when evaluations are numerous and fast, in order to avoid the overhead of
+            communication with the SQL database.
         func_args (list): the arguments to pass to the evaluation_function.
         func_kwargs (dict): the keyword arguments to pass to the evaluation_function.
         **mapper_kwargs: the keyword arguments are passed to the get_mapper() method of the

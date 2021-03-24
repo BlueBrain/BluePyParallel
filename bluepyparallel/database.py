@@ -26,7 +26,7 @@ class DataBase:
 
     Args:
         url (str): The URL of the database following the RFC-1738 format (
-            https://docs.sqlalchemy.org/en/14/core/engines.html#database-urls)
+            https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls)
         create (bool): If set to True, the database will be automatically created by the
             constructor.
         args and kwargs: They will be passed to the :func:`sqlalchemy.create_engine` function.

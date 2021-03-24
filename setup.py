@@ -30,7 +30,7 @@ VERSION = imp.load_source("", "bluepyparallel/version.py").VERSION
 
 setup(
     name="BluePyParallel",
-    author="BlueBrain cells",
+    author="bbp-ou-cells",
     author_email="bbp-ou-cells@groupes.epfl.ch",
     version=VERSION,
     description="Provides an embarassingly parallel tool with sql backend",

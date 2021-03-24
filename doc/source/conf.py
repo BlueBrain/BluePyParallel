@@ -79,4 +79,5 @@ intersphinx_mapping = {
     "pandas": ("https://pandas.pydata.org/docs", None),
     "dask": ("https://docs.dask.org/en/latest/", None),
     "ipyparallel": ("https://ipyparallel.readthedocs.io/en/latest/", None),
+    "sqlalchemy": ("https://docs.sqlalchemy.org/en/latest/", None),
 }
