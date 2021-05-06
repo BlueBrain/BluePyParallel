@@ -18,6 +18,15 @@ except ImportError:  # pragma: no cover
     dask_available = False
 
 try:
+    import dask.dataframe as dd  # pylint: disable=ungrouped-imports
+    import pandas as pd
+    from dask.distributed import progress
+
+    dask_df_available = True
+except ImportError:  # pragma: no cover
+    dask_df_available = False
+
+try:
     import ipyparallel
 
     ipyparallel_available = True
@@ -68,19 +77,16 @@ class ParallelFactory:
     def _with_batches(self, mapper, func, iterable, batch_size=None):
         """Wrapper on mapper function creating batches of iterable to give to mapper.
 
-        The batch_size is an int corresponding to the number of evaluation in each batch/
+        The batch_size is an int corresponding to the number of evaluation in each batch.
         """
         if isinstance(iterable, Iterator):
             iterable = list(iterable)
 
         batch_size = batch_size or self.batch_size
         if batch_size is not None:
-            iterables = [
-                _iterable.tolist()
-                for _iterable in np.array_split(
-                    iterable, len(iterable) // min(batch_size, len(iterable))
-                )
-            ]
+            iterables = np.array_split(iterable, len(iterable) // min(batch_size, len(iterable)))
+            if not isinstance(iterable, (pd.DataFrame, pd.Series)):
+                iterables = [_iterable.tolist() for _iterable in iterables]
         else:
             iterables = [iterable]
 
@@ -160,7 +166,10 @@ class MultiprocessingFactory(ParallelFactory):
 
     def shutdown(self):
         """Close the pool."""
-        self.pool.close()
+        try:
+            self.pool.close()
+        except Exception:  # pylint: disable=broad-except ; # pragma: no cover
+            pass
 
 
 class IPyParallelFactory(ParallelFactory):
@@ -217,33 +226,102 @@ class DaskFactory(ParallelFactory):
             self.interactive = False
             dask_mpi.initialize()
             L.info("Starting dask_mpi...")
+
         self.client = dask.distributed.Client(
             address=address,
             scheduler_file=dask_scheduler_path,
             **kwargs,
         )
-        self.nb_processes = len(self.client.scheduler_info()["workers"])
+
+        if self.interactive:
+            self.nb_processes = len(self.client.scheduler_info()["workers"])
+        else:  # pragma: no cover
+            from mpi4py import MPI
+
+            comm = MPI.COMM_WORLD  # pylint: disable=c-extension-no-member
+            self.nb_processes = comm.Get_size()
+
         super().__init__(batch_size, chunk_size)
 
     def shutdown(self):
         """Close the scheduler and the cluster if it was created by the factory."""
-        cluster = self.client.cluster
-        self.client.close()
-        if not self.interactive:  # pragma: no cover
-            cluster.close()
+        try:
+            self.client.close()
+        except Exception:  # pylint: disable=broad-except ; # pragma: no cover
+            pass
 
     def get_mapper(self, batch_size=None, chunk_size=None, **kwargs):
         """Get a Dask mapper."""
         self._chunksize_to_kwargs(chunk_size, kwargs, label="batch_size")
 
         def _mapper(func, iterable, *func_args, **func_kwargs):
-            def _dask_mapper(func, iterable, **kwargs):
+            def _dask_mapper(func, iterable):
                 futures = self.client.map(func, iterable, **kwargs)
                 for _future, result in dask.distributed.as_completed(futures, with_results=True):
                     yield result
 
             func = self.mappable_func(func, *func_args, **func_kwargs)
             return self._with_batches(_dask_mapper, func, iterable, batch_size=batch_size)
+
+        return _mapper
+
+
+class DaskDataFrameFactory(DaskFactory):
+    """Parallel helper class using dask.dataframe."""
+
+    _SCHEDULER_PATH = "PARALLEL_DASK_SCHEDULER_PATH"
+
+    def __init__(
+        self,
+        batch_size=None,
+        chunk_size=None,
+        scheduler_file=None,
+        address=None,
+        dask_config=None,
+        **kwargs
+    ):
+        super().__init__(
+            batch_size, chunk_size, scheduler_file=scheduler_file, address=address, **kwargs
+        )
+        if dask_config is None:  # pragma: no cover
+            dask_config = {
+                "distributed.worker.use_file_locking": False,
+                "distributed.worker.memory.target": False,
+                "distributed.worker.memory.spill": False,
+                "distributed.worker.memory.pause": 0.8,
+                "distributed.worker.memory.terminate": 95,
+                "distributed.worker.profile.interval": "10000ms",
+                "distributed.worker.profile.cycle": "1000000ms",
+                "distributed.admin.tick.limit": "1h",
+            }
+
+        dask.config.set(dask_config)
+
+    def _with_batches(self, *args, **kwargs):
+        """Specific process for batches."""
+        for tmp in super()._with_batches(*args, **kwargs):
+            if isinstance(tmp, pd.Series):
+                tmp = tmp.to_frame()
+            yield tmp
+
+    def get_mapper(self, batch_size=None, chunk_size=None, **kwargs):
+        """Get a Dask mapper."""
+
+        self._chunksize_to_kwargs(chunk_size, kwargs, label="chunksize")
+        if not kwargs.get("chunksize"):
+            kwargs["npartitions"] = self.nb_processes or 1
+
+        def _mapper(func, iterable, *func_args, meta, **func_kwargs):
+            def _dask_df_mapper(func, iterable):
+                df = pd.DataFrame(iterable)
+                ddf = dd.from_pandas(df, **kwargs)
+                future = ddf.apply(func, meta=meta, axis=1).persist()
+                progress(future)
+                # Put into a list because of the 'yield from' in _with_batches
+                return [future.compute()]
+
+            func = self.mappable_func(func, *func_args, **func_kwargs)
+            return self._with_batches(_dask_df_mapper, func, iterable, batch_size=batch_size)
 
         return _mapper
 
@@ -264,6 +342,8 @@ def init_parallel_factory(parallel_lib, *args, **kwargs):
     }
     if dask_available:  # pragma: no cover
         parallel_factories["dask"] = DaskFactory
+    if dask_df_available:  # pragma: no cover
+        parallel_factories["dask_dataframe"] = DaskDataFrameFactory
     if ipyparallel_available:  # pragma: no cover
         parallel_factories["ipyparallel"] = IPyParallelFactory
 

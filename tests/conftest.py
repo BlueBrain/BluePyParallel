@@ -14,7 +14,7 @@ def db_url(tmpdir):
     return tmpdir / "db.sql"
 
 
-@pytest.fixture(params=[None, "multiprocessing", "ipyparallel", "dask"])
+@pytest.fixture(params=[None, "multiprocessing", "ipyparallel", "dask", "dask_dataframe"])
 def factory_type(request):
     return request.param
 
@@ -37,7 +37,7 @@ def dask_cluster():
 )
 def parallel_factory(factory_type, dask_cluster, request):
     factory_kwargs = copy.deepcopy(request.param)
-    if factory_type == "dask":
+    if factory_type in ["dask", "dask_dataframe"]:
         factory_kwargs["address"] = dask_cluster
     elif factory_type == "ipyparallel":
         tox_name = os.environ.get("TOX_ENV_NAME")

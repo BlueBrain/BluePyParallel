@@ -124,6 +124,18 @@ class TestEvaluate:
 
         assert_frame_equal(result_df, expected_df, check_like=True)
 
+    def test_evaluate_no_new_columns_dask_dataframe(self, input_df, dask_cluster):
+        """Test evaluator with no new columns given."""
+        parallel_factory = init_parallel_factory("dask_dataframe", address=dask_cluster)
+        with pytest.raises(
+            ValueError, match=r"The new columns must be provided when using 'DaskDataFrameFactory'"
+        ):
+            evaluate(
+                input_df,
+                _evaluation_function,
+                parallel_factory=parallel_factory,
+            )
+
     def test_evaluate_empty_df(self, input_df, expected_df):
         """Test evaluator on an empty DF."""
         result_df = evaluate(
@@ -276,6 +288,24 @@ class TestEvaluate:
                 resume=True,
                 parallel_factory=parallel_factory,
                 db_url=db_url,
+            )
+
+    def test_evaluate_exception_in_new_columns(self, input_df):
+        """Test evaluator on a trivial example."""
+        parallel_factory = init_parallel_factory(None)
+
+        new_columns = [["exception", None]]
+
+        # Should raise a ValueError because the values changed
+        with pytest.raises(
+            ValueError,
+            match=r"The 'exception' column can not be one of the new columns",
+        ):
+            evaluate(
+                input_df,
+                _evaluation_function,
+                new_columns,
+                parallel_factory=parallel_factory,
             )
 
     def test_evaluate_overwrite_db(

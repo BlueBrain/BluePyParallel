@@ -8,7 +8,7 @@ from bluepyparallel import init_parallel_factory
 
 def func(row):
     """Trivial computation"""
-    time.sleep(5)
+    time.sleep(1)
 
     if row["data"] in [1, 3]:
         raise ValueError(f"The value {row['data']} is forbidden")
@@ -20,16 +20,18 @@ if __name__ == "__main__":
     parallel_lib = sys.argv[1] or None
     batch_size = int(sys.argv[2]) if len(sys.argv) >= 3 else None
     chunk_size = int(sys.argv[3]) if len(sys.argv) >= 4 else None
-    df = pd.DataFrame()
-    df["data"] = np.arange(200)
+    args = int(sys.argv[4]) if len(sys.argv) >= 5 else None
 
     parallel_factory = init_parallel_factory(parallel_lib, batch_size=batch_size)
+
+    df = pd.DataFrame()
+    df["data"] = np.arange(20)
+
     df = evaluate(
         df,
         func,
         new_columns=[["out", 0]],
         parallel_factory=parallel_factory,
-        chunksize=chunk_size,
     )
     parallel_factory.shutdown()
     print(df)

@@ -27,15 +27,8 @@
 
 set -e
 
-
 module purge
 module load unstable py-mpi4py
-module load unstable py-dask-mpi
-module load unstable py-bglibpy
-module load unstable neurodamus-neocortex
+module unload python
 
-. ~/base/bin/activate
-
-unset PMI_RANK
-
-srun python large_computation.py dask 100000 1000
+srun -n 5 python large_computation.py dask_dataframe

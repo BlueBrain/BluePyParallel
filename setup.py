@@ -15,7 +15,7 @@ with open("README.rst", encoding="utf-8") as f:
 reqs = [
     "pandas",
     "ipyparallel",
-    "dask[distributed]>=2.30",
+    "dask[dataframe, distributed]>=2.30",
     "dask-mpi>=2.20",
     "sqlalchemy<1.4",
     "sqlalchemy-utils",

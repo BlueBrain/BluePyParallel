@@ -9,18 +9,14 @@
 #SBATCH --job-name=test_bpp
 set -e
 
-unset PMI_RANK
-
 export OPENBLAS_NUM_THREADS=1
 export OMP_NUM_THREADS=1
 
 export IPYTHONDIR=${PWD}/.ipython
 export IPYTHON_PROFILE=benchmark.${SLURM_JOBID}
 ipcontroller --init --ip='*' --sqlitedb --ping=30000 --profile=${IPYTHON_PROFILE} &
-sleep 1
+sleep 10
 srun --output="${LOGS}/engine_%j_%2t.out" ipengine --timeout=300 --profile=${IPYTHON_PROFILE} &
-sleep 1
-
-export PARALLEL_BATCH_SIZE=10000
+sleep 10
 
 python large_computation.py ipyparallel

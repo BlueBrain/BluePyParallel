@@ -8,6 +8,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from bluepyparallel.database import DataBase
+from bluepyparallel.parallel import DaskDataFrameFactory
 from bluepyparallel.parallel import init_parallel_factory
 
 logger = logging.getLogger(__name__)
@@ -16,6 +17,7 @@ logger = logging.getLogger(__name__)
 def _try_evaluation(task, evaluation_function, func_args, func_kwargs):
     """Encapsulate the evaluation function into a try/except and isolate to record exceptions."""
     task_id, task_args = task
+
     try:
         result = evaluation_function(task_args, *func_args, **func_kwargs)
         exception = None
@@ -23,7 +25,114 @@ def _try_evaluation(task, evaluation_function, func_args, func_kwargs):
         result = {}
         exception = "".join(traceback.format_exception(*sys.exc_info()))
         logger.exception("Exception for ID=%s: %s", task_id, exception)
+
     return task_id, result, exception
+
+
+def _try_evaluation_df(task, evaluation_function, func_args, func_kwargs):
+    task_id, result, exception = _try_evaluation(
+        (task.name, task),
+        evaluation_function,
+        func_args,
+        func_kwargs,
+    )
+    res_cols = list(result.keys())
+    result["exception"] = exception
+    return pd.Series(result, name=task_id, dtype="object", index=["exception"] + res_cols)
+
+
+def _evaluate_dataframe(
+    to_evaluate, df, evaluation_function, func_args, func_kwargs, new_columns, mapper, task_ids, db
+):
+    """Internal evalution function for dask.dataframe."""
+    # Setup the function to apply to the data
+    eval_func = partial(
+        _try_evaluation_df,
+        evaluation_function=evaluation_function,
+        func_args=func_args,
+        func_kwargs=func_kwargs,
+    )
+    meta = pd.DataFrame({col[0]: pd.Series(dtype="object") for col in new_columns})
+
+    res = []
+    try:
+        # Compute and collect the results
+        for batch in mapper(eval_func, to_evaluate.loc[task_ids, df.columns], meta=meta):
+            res.append(batch)
+
+            if db is not None:
+                # pylint: disable=cell-var-from-loop
+                batch_complete = to_evaluate[df.columns].join(batch, how="right")
+                batch_cols = [col for col in batch_complete.columns if col != "exception"]
+                batch_complete.apply(
+                    lambda row: db.write(row.name, row[batch_cols].to_dict(), row["exception"]),
+                    axis=1,
+                )
+    except (KeyboardInterrupt, SystemExit) as ex:  # pragma: no cover
+        # To save dataframe even if program is killed
+        logger.warning("Stopping mapper loop. Reason: %r", ex)
+    return pd.concat(res)
+
+
+def _evaluate_basic(
+    to_evaluate, df, evaluation_function, func_args, func_kwargs, mapper, task_ids, db
+):
+
+    res = []
+    # Setup the function to apply to the data
+    eval_func = partial(
+        _try_evaluation,
+        evaluation_function=evaluation_function,
+        func_args=func_args,
+        func_kwargs=func_kwargs,
+    )
+
+    # Split the data into rows
+    arg_list = list(to_evaluate.loc[task_ids, df.columns].to_dict("index").items())
+
+    try:
+        # Compute and collect the results
+        for task_id, result, exception in tqdm(mapper(eval_func, arg_list), total=len(task_ids)):
+            res.append(dict({"df_index": task_id, "exception": exception}, **result))
+
+            # Save the results into the DB
+            if db is not None:
+                db.write(
+                    task_id, result, exception, **to_evaluate.loc[task_id, df.columns].to_dict()
+                )
+    except (KeyboardInterrupt, SystemExit) as ex:
+        # To save dataframe even if program is killed
+        logger.warning("Stopping mapper loop. Reason: %r", ex)
+
+    # Gather the results to the output DataFrame
+    return pd.DataFrame(res).set_index("df_index")
+
+
+def _prepare_db(db_url, to_evaluate, df, resume, task_ids):
+    """ "Prepare db."""
+    db = DataBase(db_url)
+
+    if resume and db.exists("df"):
+        logger.info("Load data from SQL database")
+        db.reflect("df")
+        previous_results = db.load()
+        previous_idx = previous_results.index
+        bad_cols = [
+            col
+            for col in df.columns
+            if not to_evaluate.loc[previous_idx, col].equals(previous_results[col])
+        ]
+        if bad_cols:
+            raise ValueError(
+                f"The following columns have different values from the DataBase: {bad_cols}"
+            )
+        to_evaluate.loc[previous_results.index] = previous_results.loc[previous_results.index]
+        task_ids = task_ids.difference(previous_results.index)
+    else:
+        logger.info("Create SQL database")
+        db.create(to_evaluate)
+
+    return db, db.get_url()
 
 
 def evaluate(
@@ -84,10 +193,14 @@ def evaluate(
 
     # Set default new columns
     if new_columns is None:
+        if isinstance(parallel_factory, DaskDataFrameFactory):
+            raise ValueError("The new columns must be provided when using 'DaskDataFrameFactory'")
         new_columns = []
 
     # Setup internal and new columns
-    to_evaluate["exception"] = None
+    if any(col[0] == "exception" for col in new_columns):
+        raise ValueError("The 'exception' column can not be one of the new columns")
+    new_columns = [["exception", None]] + new_columns  # Don't use append to keep the input as is.
     for new_column in new_columns:
         to_evaluate[new_column[0]] = new_column[1]
 
@@ -96,29 +209,7 @@ def evaluate(
         logger.info("Not using SQL backend to save iterations")
         db = None
     else:
-        db = DataBase(db_url)
-
-        if resume and db.exists("df"):
-            logger.info("Load data from SQL database")
-            db.reflect("df")
-            previous_results = db.load()
-            previous_idx = previous_results.index
-            bad_cols = [
-                col
-                for col in df.columns
-                if not to_evaluate.loc[previous_idx, col].equals(previous_results[col])
-            ]
-            if bad_cols:
-                raise ValueError(
-                    f"The following columns have different values from the DataBase: {bad_cols}"
-                )
-            to_evaluate.loc[previous_results.index] = previous_results.loc[previous_results.index]
-            task_ids = task_ids.difference(previous_results.index)
-        else:
-            logger.info("Create SQL database")
-            db.create(to_evaluate)
-
-        db_url = db.get_url()
+        db, db_url = _prepare_db(db_url, to_evaluate, df, resume, task_ids)
 
     # Log the number of tasks to run
     if len(task_ids) > 0:
@@ -130,36 +221,29 @@ def evaluate(
     # Get the factory mapper
     mapper = parallel_factory.get_mapper(**mapper_kwargs)
 
-    # Setup the function to apply to the data
-    eval_func = partial(
-        _try_evaluation,
-        evaluation_function=evaluation_function,
-        func_args=func_args,
-        func_kwargs=func_kwargs,
-    )
-
-    # Split the data into rows
-    arg_list = list(to_evaluate.loc[task_ids, df.columns].to_dict("index").items())
-
-    res = []
-    try:
-        # Compute and collect the results
-        for task_id, result, exception in tqdm(mapper(eval_func, arg_list), total=len(task_ids)):
-            res.append(dict({"df_index": task_id, "exception": exception}, **result))
-
-            # Save the results into the DB
-            if db is not None:
-                db.write(
-                    task_id, result, exception, **to_evaluate.loc[task_id, df.columns].to_dict()
-                )
-
-    except (KeyboardInterrupt, SystemExit) as ex:
-        # To save dataframe even if program is killed
-        logger.warning("Stopping mapper loop. Reason: %r", ex)
-
-    # Gather the results to the output DataFrame
-    res_df = pd.DataFrame(res)
-    res_df.set_index("df_index", inplace=True)
+    if isinstance(parallel_factory, DaskDataFrameFactory):
+        res_df = _evaluate_dataframe(
+            to_evaluate,
+            df,
+            evaluation_function,
+            func_args,
+            func_kwargs,
+            new_columns,
+            mapper,
+            task_ids,
+            db,
+        )
+    else:
+        res_df = _evaluate_basic(
+            to_evaluate,
+            df,
+            evaluation_function,
+            func_args,
+            func_kwargs,
+            mapper,
+            task_ids,
+            db,
+        )
     to_evaluate.loc[res_df.index, res_df.columns] = res_df
 
     return to_evaluate
