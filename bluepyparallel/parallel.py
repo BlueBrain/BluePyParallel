@@ -90,7 +90,9 @@ class ParallelFactory:
         else:
             iterables = [iterable]
 
-        for _iterable in iterables:
+        for i, _iterable in enumerate(iterables):
+            if len(iterables) > 1:
+                L.info("Computing batch %s / %s", i + 1, len(iterables))
             yield from mapper(func, _iterable)
 
     def _chunksize_to_kwargs(self, chunk_size, kwargs, label="chunk_size"):

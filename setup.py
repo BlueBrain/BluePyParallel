@@ -23,6 +23,7 @@ reqs = [
 ]
 
 doc_reqs = [
+    "sphinx<4",
     "sphinx-bluebrain-theme",
 ]
 

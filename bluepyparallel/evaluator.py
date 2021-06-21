@@ -42,7 +42,15 @@ def _try_evaluation_df(task, evaluation_function, func_args, func_kwargs):
 
 
 def _evaluate_dataframe(
-    to_evaluate, df, evaluation_function, func_args, func_kwargs, new_columns, mapper, task_ids, db
+    to_evaluate,
+    input_cols,
+    evaluation_function,
+    func_args,
+    func_kwargs,
+    new_columns,
+    mapper,
+    task_ids,
+    db,
 ):
     """Internal evalution function for dask.dataframe."""
     # Setup the function to apply to the data
@@ -57,17 +65,13 @@ def _evaluate_dataframe(
     res = []
     try:
         # Compute and collect the results
-        for batch in mapper(eval_func, to_evaluate.loc[task_ids, df.columns], meta=meta):
+        for batch in mapper(eval_func, to_evaluate.loc[task_ids, input_cols], meta=meta):
             res.append(batch)
 
             if db is not None:
-                # pylint: disable=cell-var-from-loop
-                batch_complete = to_evaluate[df.columns].join(batch, how="right")
-                batch_cols = [col for col in batch_complete.columns if col != "exception"]
-                batch_complete.apply(
-                    lambda row: db.write(row.name, row[batch_cols].to_dict(), row["exception"]),
-                    axis=1,
-                )
+                batch_complete = to_evaluate[input_cols].join(batch, how="right")
+                data = batch_complete.to_records().tolist()
+                db.write_batch(batch_complete.columns.tolist(), data)
     except (KeyboardInterrupt, SystemExit) as ex:  # pragma: no cover
         # To save dataframe even if program is killed
         logger.warning("Stopping mapper loop. Reason: %r", ex)
@@ -75,7 +79,7 @@ def _evaluate_dataframe(
 
 
 def _evaluate_basic(
-    to_evaluate, df, evaluation_function, func_args, func_kwargs, mapper, task_ids, db
+    to_evaluate, input_cols, evaluation_function, func_args, func_kwargs, mapper, task_ids, db
 ):
 
     res = []
@@ -88,7 +92,7 @@ def _evaluate_basic(
     )
 
     # Split the data into rows
-    arg_list = list(to_evaluate.loc[task_ids, df.columns].to_dict("index").items())
+    arg_list = list(to_evaluate.loc[task_ids, input_cols].to_dict("index").items())
 
     try:
         # Compute and collect the results
@@ -98,7 +102,7 @@ def _evaluate_basic(
             # Save the results into the DB
             if db is not None:
                 db.write(
-                    task_id, result, exception, **to_evaluate.loc[task_id, df.columns].to_dict()
+                    task_id, result, exception, **to_evaluate.loc[task_id, input_cols].to_dict()
                 )
     except (KeyboardInterrupt, SystemExit) as ex:
         # To save dataframe even if program is killed
@@ -132,7 +136,7 @@ def _prepare_db(db_url, to_evaluate, df, resume, task_ids):
         logger.info("Create SQL database")
         db.create(to_evaluate)
 
-    return db, db.get_url()
+    return db, db.get_url(), task_ids
 
 
 def evaluate(
@@ -209,7 +213,7 @@ def evaluate(
         logger.info("Not using SQL backend to save iterations")
         db = None
     else:
-        db, db_url = _prepare_db(db_url, to_evaluate, df, resume, task_ids)
+        db, db_url, task_ids = _prepare_db(db_url, to_evaluate, df, resume, task_ids)
 
     # Log the number of tasks to run
     if len(task_ids) > 0:
@@ -224,7 +228,7 @@ def evaluate(
     if isinstance(parallel_factory, DaskDataFrameFactory):
         res_df = _evaluate_dataframe(
             to_evaluate,
-            df,
+            df.columns,
             evaluation_function,
             func_args,
             func_kwargs,
@@ -236,7 +240,7 @@ def evaluate(
     else:
         res_df = _evaluate_basic(
             to_evaluate,
-            df,
+            df.columns,
             evaluation_function,
             func_args,
             func_kwargs,

@@ -1,10 +1,20 @@
 Changelog
 =========
 
+Version 0.0.6
+-------------
+
+- Improve DB inserts for dask.dataframe factory
+
+Version 0.0.5
+-------------
+
+- Add support for dask.dataframe
+
 Version 0.0.4
 -------------
 
-- Added DaskDataframe factory
+- Update doc, README and author
 
 Version 0.0.3
 -------------

@@ -4,6 +4,7 @@ import re
 import pandas as pd
 from sqlalchemy import MetaData
 from sqlalchemy import Table
+from sqlalchemy import bindparam
 from sqlalchemy import create_engine
 from sqlalchemy import insert
 from sqlalchemy import schema
@@ -15,6 +16,7 @@ from sqlalchemy_utils import database_exists
 
 try:  # pragma: no cover
     import psycopg2
+    import psycopg2.extras
 
     with_psycopg2 = True
 except ImportError:
@@ -126,3 +128,23 @@ class DataBase:
 
         query = insert(self.table).values(dict(**{self.index_col: row_id}, **vals, **input_values))
         self.connection.execute(query)
+
+    def write_batch(self, columns, data):
+        """Write entries from a list of lists into the table."""
+        if not data:  # pragma: no cover
+            return
+        assert len(columns) + 1 == len(
+            data[0]
+        ), "The columns list must have one less entry than each data element"
+        cursor = self.connection.connection.cursor()
+        cols = {col: bindparam(col) for col in [self.index_col] + columns}
+        # pylint: disable=no-value-for-parameter
+        compiled = self.table.insert().values(**cols).compile(dialect=self.engine.dialect)
+
+        if hasattr(cursor, "mogrify") and with_psycopg2:  # pragma: no cover
+            psycopg2.extras.execute_values(cursor, str(compiled), data)
+        else:
+            cursor.executemany(str(compiled), data)
+
+        self.connection.connection.commit()
+        self.connection.connection.close()
