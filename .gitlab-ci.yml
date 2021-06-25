@@ -1,0 +1,34 @@
+include:
+   - project: nse/ci
+     file:
+        - /ci/lib/tox-bb5.yml
+        - /ci/jobs/check-version.yml
+        - /ci/jobs/lint.yml
+        - /ci/jobs/py36.yml
+        - /ci/jobs/py37.yml
+        - /ci/jobs/py38.yml
+        - /ci/jobs/docs.yml
+        - /ci/jobs/build-package.yml
+        - /ci/jobs/publish-package.yml
+        - /ci/jobs/publish-docs.yml
+        - /ci/jobs/tag.yml
+
+docs:
+  variables:
+    EXTRA_MODULES: archive/2021-05:py-mpi4py
+
+lint:
+  variables:
+    EXTRA_MODULES: archive/2021-05:py-mpi4py
+
+py36:
+  variables:
+    EXTRA_MODULES: archive/2021-05:py-mpi4py
+
+py37:
+  variables:
+    EXTRA_MODULES: archive/2021-05:py-mpi4py
+
+py38:
+  variables:
+    EXTRA_MODULES: archive/2021-05:py-mpi4py

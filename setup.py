@@ -40,7 +40,7 @@ setup(
     url="https://bbpteam.epfl.ch/documentation/projects/BluePyParallel",
     project_urls={
         "Tracker": "https://bbpteam.epfl.ch/project/issues/projects/CELLS/issues",
-        "Source": "ssh://bbpcode.epfl.ch/cells/BluePyParallel",
+        "Source": "https://bbpgitlab.epfl.ch/neuromath/bluepyparallel",
     },
     license="BBP-internal-confidential",
     install_requires=reqs,
