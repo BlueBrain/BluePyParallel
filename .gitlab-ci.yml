@@ -13,22 +13,17 @@ include:
         - /ci/jobs/publish-docs.yml
         - /ci/jobs/tag.yml
 
-docs:
-  variables:
-    EXTRA_MODULES: archive/2021-05:py-mpi4py
-
-lint:
-  variables:
-    EXTRA_MODULES: archive/2021-05:py-mpi4py
+variables:
+  EXTRA_MODULES: archive/2021-05:py-mpi4py
 
 py36:
   variables:
-    EXTRA_MODULES: archive/2021-05:py-mpi4py
+    bb5_cpus_per_task: 6
 
 py37:
   variables:
-    EXTRA_MODULES: archive/2021-05:py-mpi4py
+    bb5_cpus_per_task: 6
 
 py38:
   variables:
-    EXTRA_MODULES: archive/2021-05:py-mpi4py
+    bb5_cpus_per_task: 6
