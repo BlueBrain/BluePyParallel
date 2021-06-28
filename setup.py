@@ -23,6 +23,7 @@ reqs = [
 ]
 
 doc_reqs = [
+    "m2r2",
     "sphinx<4",
     "sphinx-bluebrain-theme",
 ]
