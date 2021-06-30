@@ -16,9 +16,6 @@ include:
      file:
         - /ci/jobs/auto-release.yml
 
-variables:
-  EXTRA_MODULES: archive/2021-05:py-mpi4py
-
 py36:
   variables:
     bb5_cpus_per_task: 6
