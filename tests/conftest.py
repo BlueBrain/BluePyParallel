@@ -11,16 +11,19 @@ from bluepyparallel import init_parallel_factory
 
 @pytest.fixture
 def db_url(tmpdir):
+    """The DB URL."""
     return tmpdir / "db.sql"
 
 
 @pytest.fixture(params=[None, "multiprocessing", "ipyparallel", "dask", "dask_dataframe"])
 def factory_type(request):
+    """The factory type."""
     return request.param
 
 
 @pytest.fixture(scope="session")
 def dask_cluster():
+    """The dask cluster."""
     cluster = dask.distributed.LocalCluster()
     yield cluster
     cluster.close()
@@ -36,6 +39,7 @@ def dask_cluster():
     ]
 )
 def parallel_factory(factory_type, dask_cluster, request):
+    """The parallel factory."""
     factory_kwargs = copy.deepcopy(request.param)
     if factory_type in ["dask", "dask_dataframe"]:
         factory_kwargs["address"] = dask_cluster

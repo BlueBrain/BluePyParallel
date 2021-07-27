@@ -102,7 +102,7 @@ class ParallelFactory:
 
 
 class NoDaemonProcess(multiprocessing.Process):
-    """Class that represents a non-daemon process"""
+    """Class that represents a non-daemon process."""
 
     # pylint: disable=dangerous-default-value
 
@@ -111,17 +111,17 @@ class NoDaemonProcess(multiprocessing.Process):
         super().__init__(group=None, target=target, name=name, args=args, kwargs=kwargs)
 
     def _get_daemon(self):  # pylint: disable=no-self-use
-        """Get daemon flag"""
+        """Get daemon flag."""
         return False  # pragma: no cover
 
     def _set_daemon(self, value):
-        """Set daemon flag"""
+        """Set daemon flag."""
 
     daemon = property(_get_daemon, _set_daemon)
 
 
 class NestedPool(Pool):  # pylint: disable=abstract-method
-    """Class that represents a MultiProcessing nested pool"""
+    """Class that represents a MultiProcessing nested pool."""
 
     Process = NoDaemonProcess
 
@@ -146,7 +146,6 @@ class MultiprocessingFactory(ParallelFactory):
 
     def __init__(self, batch_size=None, chunk_size=None, processes=None, **kwargs):
         """Initialize multiprocessing factory."""
-
         super().__init__(batch_size, chunk_size)
 
         self.nb_processes = processes or os.cpu_count()
@@ -280,7 +279,7 @@ class DaskDataFrameFactory(DaskFactory):
         scheduler_file=None,
         address=None,
         dask_config=None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             batch_size, chunk_size, scheduler_file=scheduler_file, address=address, **kwargs
@@ -308,7 +307,6 @@ class DaskDataFrameFactory(DaskFactory):
 
     def get_mapper(self, batch_size=None, chunk_size=None, **kwargs):
         """Get a Dask mapper."""
-
         self._chunksize_to_kwargs(chunk_size, kwargs, label="chunksize")
         if not kwargs.get("chunksize"):
             kwargs["npartitions"] = self.nb_processes or 1

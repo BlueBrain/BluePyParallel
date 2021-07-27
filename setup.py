@@ -1,9 +1,9 @@
-#!/usr/bin/env python
-
+"""Setup for the BluePyParallel package."""
 import imp
 import sys
 
-from setuptools import setup, find_packages
+from setuptools import find_packages
+from setuptools import setup
 
 if sys.version_info < (3, 6):
     sys.exit("Sorry, Python < 3.6 is not supported")
@@ -51,10 +51,10 @@ setup(
     packages=find_packages(exclude=["tests"]),
     python_requires=">=3.6",
     classifiers=[
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
     ],
 )

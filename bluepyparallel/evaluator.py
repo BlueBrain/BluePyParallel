@@ -113,7 +113,7 @@ def _evaluate_basic(
 
 
 def _prepare_db(db_url, to_evaluate, df, resume, task_ids):
-    """ "Prepare db."""
+    """Prepare db."""
     db = DataBase(db_url)
 
     if resume and db.exists("df"):
