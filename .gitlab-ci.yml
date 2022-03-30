@@ -13,12 +13,14 @@ include:
      file:
         - /ci/jobs/auto-release.yml
         - /ci/lib/pytest-template.yml
-        - /ci/jobs/py36.yml
         - /ci/jobs/py37.yml
         - /ci/jobs/py38.yml
+        - /ci/jobs/py39.yml
         - /ci/jobs/coverage.yml
 
 .tox-template:
   variables:
-    EXTRA_MODULES: archive/2021-05:py-mpi4py
-    bb5_cpus_per_task: 6
+    EXTRA_MODULES:
+      archive/2021-12:py-mpi4py
+    bb5_cpus_per_task: 8
+    bb5_memory: 6G

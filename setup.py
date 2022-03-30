@@ -1,12 +1,8 @@
 """Setup for the BluePyParallel package."""
 import imp
-import sys
 
 from setuptools import find_packages
 from setuptools import setup
-
-if sys.version_info < (3, 6):
-    sys.exit("Sorry, Python < 3.6 is not supported")
 
 # Read the contents of the README file
 with open("README.rst", encoding="utf-8") as f:
@@ -14,10 +10,10 @@ with open("README.rst", encoding="utf-8") as f:
 
 reqs = [
     "pandas",
-    "ipyparallel",
+    "ipyparallel<7",
     "dask[dataframe, distributed]>=2.30",
     "dask-mpi>=2.20",
-    "sqlalchemy<1.4",
+    "sqlalchemy>1.4",
     "sqlalchemy-utils",
     "tqdm",
 ]
@@ -49,12 +45,12 @@ setup(
         "docs": doc_reqs,
     },
     packages=find_packages(exclude=["tests"]),
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
     ],
 )

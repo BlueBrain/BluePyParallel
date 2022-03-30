@@ -31,10 +31,12 @@ def _interrupting_function(row, *args, **kwargs):
     return _evaluation_function(row, *args, **kwargs)
 
 
-def _slow_function(row, *args, sleep_time=0.02, **kwargs):
+def _slow_function(row, *args, **kwargs):
     """Mock evaluation function."""
     if "sleep_time" in row:
         sleep_time = row["sleep_time"]
+    else:
+        sleep_time = kwargs.get("sleep_time", 0.02)
     time.sleep(sleep_time)
     return _evaluation_function(row, *args, **kwargs)
 

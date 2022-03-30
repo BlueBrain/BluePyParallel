@@ -58,8 +58,16 @@ class DataBase:
     @property
     def connection(self):
         """Get a connection to the database."""
+        try:
+            if self._connection.connection.dbapi_connection is None:
+                self._connection.close()
+                self._connection = None
+        except AttributeError:
+            self._connection = None
+
         if self._connection is None:
             self._connection = self.engine.connect()
+
         return self._connection
 
     def get_url(self):

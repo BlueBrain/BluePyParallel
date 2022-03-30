@@ -133,8 +133,8 @@ class SerialFactory(ParallelFactory):
         """Get a map."""
 
         def _mapper(func, iterable, *func_args, **func_kwargs):
-            func = self.mappable_func(func, *func_args, **func_kwargs)
-            return self._with_batches(map, func, iterable)
+            mapped_func = self.mappable_func(func, *func_args, **func_kwargs)
+            return self._with_batches(map, mapped_func, iterable)
 
         return _mapper
 
@@ -156,10 +156,10 @@ class MultiprocessingFactory(ParallelFactory):
         self._chunksize_to_kwargs(chunk_size, kwargs, label="chunksize")
 
         def _mapper(func, iterable, *func_args, **func_kwargs):
-            func = self.mappable_func(func, *func_args, **func_kwargs)
+            mapped_func = self.mappable_func(func, *func_args, **func_kwargs)
             return self._with_batches(
                 partial(self.pool.imap_unordered, **kwargs),
-                func,
+                mapped_func,
                 iterable,
             )
 
@@ -195,17 +195,19 @@ class IPyParallelFactory(ParallelFactory):
         self._chunksize_to_kwargs(chunk_size, kwargs)
 
         def _mapper(func, iterable, *func_args, **func_kwargs):
-            func = self.mappable_func(func, *func_args, **func_kwargs)
+            mapped_func = self.mappable_func(func, *func_args, **func_kwargs)
             return self._with_batches(
-                partial(self.lview.imap, **kwargs), func, iterable, batch_size=batch_size
+                partial(self.lview.imap, **kwargs), mapped_func, iterable, batch_size=batch_size
             )
 
         return _mapper
 
     def shutdown(self):
         """Remove zmq."""
-        if self.rc is not None:  # pragma: no cover
+        try:
             self.rc.close()
+        except Exception:  # pragma: no cover ; pylint: disable=broad-except
+            pass
 
 
 class DaskFactory(ParallelFactory):
@@ -256,13 +258,13 @@ class DaskFactory(ParallelFactory):
         self._chunksize_to_kwargs(chunk_size, kwargs, label="batch_size")
 
         def _mapper(func, iterable, *func_args, **func_kwargs):
-            def _dask_mapper(func, iterable):
-                futures = self.client.map(func, iterable, **kwargs)
+            def _dask_mapper(in_dask_func, iterable):
+                futures = self.client.map(in_dask_func, iterable, **kwargs)
                 for _future, result in dask.distributed.as_completed(futures, with_results=True):
                     yield result
 
-            func = self.mappable_func(func, *func_args, **func_kwargs)
-            return self._with_batches(_dask_mapper, func, iterable, batch_size=batch_size)
+            mapped_func = self.mappable_func(func, *func_args, **func_kwargs)
+            return self._with_batches(_dask_mapper, mapped_func, iterable, batch_size=batch_size)
 
         return _mapper
 
