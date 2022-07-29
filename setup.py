@@ -28,7 +28,7 @@ doc_reqs = [
 VERSION = imp.load_source("", "bluepyparallel/version.py").VERSION
 
 setup(
-    name="BluePyParallel",
+    name="bluepyparallel",
     author="bbp-ou-cells",
     author_email="bbp-ou-cells@groupes.epfl.ch",
     version=VERSION,
