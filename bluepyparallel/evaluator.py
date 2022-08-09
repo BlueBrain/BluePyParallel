@@ -31,7 +31,7 @@ def _try_evaluation(task, evaluation_function, func_args, func_kwargs):
 
 def _try_evaluation_df(task, evaluation_function, func_args, func_kwargs):
     task_id, result, exception = _try_evaluation(
-        (task.name, task),
+        (task.name, task.to_dict()),
         evaluation_function,
         func_args,
         func_kwargs,
