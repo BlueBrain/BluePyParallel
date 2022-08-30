@@ -1,4 +1,6 @@
 [paths]
-source =
+source_paths =
 	bluepyparallel
+	*/site-packages/bluepyparallel
+	*/bluepyparallel/bluepyparallel
 	*/bluepyparallel/bluepyparallel

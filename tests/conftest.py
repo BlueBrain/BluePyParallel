@@ -1,4 +1,4 @@
-"""Prepare the tests."""
+"""Configuration for the pytest test suite."""
 # pylint: disable=redefined-outer-name
 import copy
 import os

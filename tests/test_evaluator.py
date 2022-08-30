@@ -1,4 +1,5 @@
 """Test the bluepyparallel.evaluator module"""
+# pylint: disable=missing-function-docstring
 # pylint: disable=redefined-outer-name
 import time
 from copy import deepcopy
@@ -169,7 +170,7 @@ class TestEvaluate:
         assert "The value should not be 1" in result_df.loc[0, "exception"]
 
     def test_evaluate_keyboard_interrupt(self, input_df, expected_df):
-        """Test evaluator with a KeyboardInterrupt: only the first element shold be computed."""
+        """Test evaluator with a KeyboardInterrupt: only the first element should be computed."""
         result_df = evaluate(
             input_df,
             _interrupting_function,

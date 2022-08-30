@@ -1,5 +1,5 @@
 """Configuration file for the Sphinx documentation builder."""
-#
+
 # This file only contains a selection of the most common options. For a full
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
@@ -9,6 +9,7 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
+
 from pkg_resources import get_distribution
 
 # -- Project information -----------------------------------------------------
@@ -32,8 +33,11 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
+    "sphinx.ext.todo",
     "m2r2",
 ]
+
+todo_include_todos = True
 
 # Add any paths that contain templates here, relative to this directory.
 # templates_path = ['_templates']

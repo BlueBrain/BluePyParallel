@@ -1,4 +1,5 @@
 """Test the bluepyparallel.evaluator module"""
+# pylint: disable=missing-function-docstring
 # pylint: disable=redefined-outer-name
 import os
 from uuid import uuid4

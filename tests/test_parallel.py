@@ -1,4 +1,5 @@
 """Test the bluepyparallel.parallel module"""
+# pylint: disable=missing-function-docstring
 # pylint: disable=redefined-outer-name
 from collections.abc import Iterator
 from copy import deepcopy

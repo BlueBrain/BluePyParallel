@@ -1,7 +1,9 @@
-import pandas as pd
 import sys
-import numpy as np
 import time
+
+import numpy as np
+import pandas as pd
+
 from bluepyparallel import evaluate
 from bluepyparallel import init_parallel_factory
 

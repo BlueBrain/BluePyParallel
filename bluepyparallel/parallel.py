@@ -110,7 +110,7 @@ class NoDaemonProcess(multiprocessing.Process):
         """Ensures group=None, for macosx."""
         super().__init__(group=None, target=target, name=name, args=args, kwargs=kwargs)
 
-    def _get_daemon(self):  # pylint: disable=no-self-use
+    def _get_daemon(self):
         """Get daemon flag."""
         return False  # pragma: no cover
 
@@ -239,7 +239,7 @@ class DaskFactory(ParallelFactory):
         if self.interactive:
             self.nb_processes = len(self.client.scheduler_info()["workers"])
         else:  # pragma: no cover
-            from mpi4py import MPI
+            from mpi4py import MPI  # pylint: disable=import-outside-toplevel
 
             comm = MPI.COMM_WORLD  # pylint: disable=c-extension-no-member
             self.nb_processes = comm.Get_size()

@@ -1,4 +1,4 @@
-.. include:: ../../README.rst
+.. mdinclude:: ../../README.md
 
 
 .. toctree::
@@ -6,5 +6,5 @@
    :maxdepth: 2
 
    Home <self>
-   api
+   api_ref
    changelog

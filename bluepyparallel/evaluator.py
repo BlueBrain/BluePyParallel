@@ -52,7 +52,7 @@ def _evaluate_dataframe(
     task_ids,
     db,
 ):
-    """Internal evalution function for dask.dataframe."""
+    """Internal evaluation function for dask.dataframe."""
     # Setup the function to apply to the data
     eval_func = partial(
         _try_evaluation_df,

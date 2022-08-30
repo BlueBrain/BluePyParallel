@@ -1,1 +1,1 @@
-"""Tests for the BluePyParallel package."""
+"""Tests suite for the bluepyparallel package."""
