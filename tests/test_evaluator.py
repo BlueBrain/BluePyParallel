@@ -68,7 +68,6 @@ def new_columns():
 @pytest.fixture
 def expected_df(input_df):
     expected_result_df = input_df.copy(deep=True)
-    expected_result_df.index.rename("index", inplace=True)
     expected_result_df["exception"] = None
     expected_result_df["result_orig"] = [1.0, 2.0, 3.0]
     expected_result_df["result_10"] = [20.0, 30.0, 40.0]
