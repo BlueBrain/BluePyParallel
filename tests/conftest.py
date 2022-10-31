@@ -24,7 +24,7 @@ def factory_type(request):
 @pytest.fixture(scope="session")
 def dask_cluster():
     """The dask cluster."""
-    cluster = dask.distributed.LocalCluster()
+    cluster = dask.distributed.LocalCluster(dashboard_address=None)
     yield cluster
     cluster.close()
 
