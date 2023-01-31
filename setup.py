@@ -2,7 +2,7 @@
 import importlib.util
 from pathlib import Path
 
-from setuptools import find_packages
+from setuptools import find_namespace_packages
 from setuptools import setup
 
 spec = importlib.util.spec_from_file_location(
@@ -14,13 +14,15 @@ spec.loader.exec_module(module)
 VERSION = module.VERSION
 
 reqs = [
-    "pandas",
-    "ipyparallel<7",
-    "dask[dataframe, distributed]>=2.30",
-    "dask-mpi>=2.20",
-    "sqlalchemy>1.4",
-    "sqlalchemy-utils",
-    "tqdm",
+    "pandas>=1.3",
+    "ipyparallel>=6.3,<7",
+    "dask[dataframe, distributed]>=2021.11",
+    "dask-mpi>=2021.11",
+    "distributed>=2021.11",
+    "sqlalchemy>=1.4.24",
+    "sqlalchemy<2; python_version<'3.8'",
+    "sqlalchemy-utils>=0.37.2",
+    "tqdm>=3.7",
 ]
 
 doc_reqs = [
@@ -30,11 +32,11 @@ doc_reqs = [
 ]
 
 test_reqs = [
-    "mpi4py",
-    "pytest",
-    "pytest-benchmark",
-    "pytest-cov",
-    "pytest-html",
+    "mpi4py>=3.0.1",
+    "pytest>=6.1",
+    "pytest-benchmark>=3.4",
+    "pytest-cov>=3",
+    "pytest-html>=3.1",
 ]
 
 setup(
@@ -50,7 +52,7 @@ setup(
         "Source": "https://bbpgitlab.epfl.ch/neuromath/bluepyparallel",
     },
     license="BBP-internal-confidential",
-    packages=find_packages(include=["bluepyparallel"]),
+    packages=find_namespace_packages(include=["bluepyparallel*"]),
     python_requires=">=3.7",
     version=VERSION,
     install_requires=reqs,
@@ -58,6 +60,7 @@ setup(
         "docs": doc_reqs,
         "test": test_reqs,
     },
+    include_package_data=True,
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
@@ -66,6 +69,8 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Topic :: Scientific/Engineering :: Bio-Informatics",
     ],
-    include_package_data=True,
 )

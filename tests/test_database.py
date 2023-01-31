@@ -1,4 +1,4 @@
-"""Test the bluepyparallel.evaluator module"""
+"""Test the ``bluepyparallel.evaluator`` module."""
 # pylint: disable=missing-function-docstring
 # pylint: disable=redefined-outer-name
 import os
@@ -20,7 +20,7 @@ URLS = [
     "sqlite:////tmpdir/test_bpp.db",
 ]
 try:
-    # Set up the PostGIS database:
+    # Set up the PostgreSQL database:
     #   Create the ``test_bpp`` role::
     #     $ sudo -u postgres psql -c "CREATE ROLE test_bpp PASSWORD 'test_bpp' SUPERUSER CREATEDB
     #       CREATEROLE INHERIT LOGIN;"
@@ -44,11 +44,13 @@ except ModuleNotFoundError as e:
 
 @pytest.fixture(params=URLS)
 def url(request, tmpdir):
+    """The url fixture."""
     return request.param.replace("/tmpdir", str(tmpdir))
 
 
 @pytest.fixture
 def small_df():
+    """A fixture for a small DF."""
     data = {"a": list(range(6)), "b": [str(i * 10) for i in range(6)], "exception": [None] * 6}
     idx = [f"idx_{(i + 1) * 2}" for i in range(6)]
     return pd.DataFrame(data, index=idx)
@@ -56,6 +58,7 @@ def small_df():
 
 @pytest.fixture()
 def small_db(url, small_df):
+    """A fixture for a small DB."""
     db = database.DataBase(url)
     db.create(small_df)
     small_df.to_sql(
@@ -70,6 +73,7 @@ def small_db(url, small_df):
 
 @pytest.fixture()
 def autoremoved_schema():
+    """A fixture to create a tmp schema in the DB and remove it afterwards."""
     schema_name = str(uuid4())
     yield schema_name
     engine = create_engine(PG_URL)
@@ -77,10 +81,11 @@ def autoremoved_schema():
 
 
 class TestDataBase:
-    """Test the DataBase class."""
+    """Test the ``DataBase`` class."""
 
     @pytest.mark.parametrize("table_name", [None, "df", "df_name"])
     def test_create(self, url, small_df, table_name):
+        """Test the ``db.create()`` method."""
         db = database.DataBase(url)
         db.create(small_df, table_name)
 
@@ -93,7 +98,6 @@ class TestDataBase:
         table = Table(
             table_name or "df",
             metadata,
-            autoload=True,
             autoload_with=engine,
         )
 
@@ -101,13 +105,14 @@ class TestDataBase:
         assert str(table.c.items()) == str(db.table.c.items())
 
         # Check elements inserted into the DB
-        query = select([table])
+        query = select(table)
         res = conn.execute(query).fetchall()
         assert res == []
 
     @pytest.mark.parametrize("table_name", [None, "df", "df_name"])
     @pytest.mark.skipif(not with_postresql, reason="Only tested with PostgreSQL")
     def test_create_with_schema(self, small_df, table_name, autoremoved_schema):
+        """Test the ``db.create()`` method with a schema."""
         schema_name = autoremoved_schema
         url = PG_URL
         db = database.DataBase(url)
@@ -123,7 +128,6 @@ class TestDataBase:
             table_name or "df",
             metadata,
             schema=schema_name,
-            autoload=True,
             autoload_with=engine,
         )
 
@@ -131,11 +135,12 @@ class TestDataBase:
         assert str(table.c.items()) == str(db.table.c.items())
 
         # Check elements inserted into the DB
-        query = select([table])
+        query = select(table)
         res = conn.execute(query).fetchall()
         assert res == []
 
     def test_db_exists(self, tmpdir):
+        """Test the ``db.db_exists()`` method."""
         # Ensure that the DB does not exist
         url = URLS[1].replace("/tmpdir", str(tmpdir))
         engine = create_engine(url)
@@ -155,16 +160,19 @@ class TestDataBase:
         assert db.db_exists()
 
     def test_exists(self, small_db):
+        """Test the ``db.exists()`` method."""
         assert small_db.exists("df")
         assert not small_db.exists("UNKNOWN TABLE")
 
     def test_load(self, small_df, small_db):
+        """Test the ``db.load()`` method."""
         res = small_db.load()
 
         # Check DB
         assert res.equals(small_df)
 
     def test_write(self, small_df, small_db):
+        """Test the ``db.write()`` method."""
         small_db.write("idx_100", result={"a": 1, "b": "test_1"})
         small_db.write("idx_101", exception="test exception")
         small_db.write("idx_102")  # Should write nothing
@@ -176,6 +184,7 @@ class TestDataBase:
         assert res.equals(small_df)
 
     def test_get_url(self, url, small_db):
+        """Test the ``db.get_url()`` method."""
         if url.startswith("/"):
             url = "sqlite:///" + url
         assert str(small_db.get_url()) == url

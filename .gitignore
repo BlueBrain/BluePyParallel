@@ -6,6 +6,7 @@
 *py~
 *~
 *.egg-info
+*.zip
 
 # Mac related stuff
 .DS_Store
@@ -41,3 +42,6 @@ examples/.ipynb_checkpoints
 # Node
 node_modules
 package-lock.json
+
+# dask
+**/dask-worker-space/

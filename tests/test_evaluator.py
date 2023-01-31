@@ -1,4 +1,4 @@
-"""Test the bluepyparallel.evaluator module"""
+"""Test the ``bluepyparallel.evaluator`` module."""
 # pylint: disable=missing-function-docstring
 # pylint: disable=redefined-outer-name
 import time
@@ -43,6 +43,7 @@ def _slow_function(row, *args, **kwargs):
 
 
 def remove_sql_cols(df):
+    """Remove columns that start with 'to_run_' from a DF."""
     df.drop(
         columns=[col for col in df.columns if col.startswith("to_run_")],
         inplace=True,
@@ -51,6 +52,7 @@ def remove_sql_cols(df):
 
 @pytest.fixture
 def input_df():
+    """Fixture with the input DF."""
     return pd.DataFrame(
         {
             "name": ["test1", "test2", "test3"],
@@ -62,11 +64,13 @@ def input_df():
 
 @pytest.fixture
 def new_columns():
+    """Fixture with new columns and associated values."""
     return [["result_orig", 0.0], ["result_10", 0.0]]
 
 
 @pytest.fixture
 def expected_df(input_df):
+    """Fixture with expected DF."""
     expected_result_df = input_df.copy(deep=True)
     expected_result_df["exception"] = None
     expected_result_df["result_orig"] = [1.0, 2.0, 3.0]
@@ -76,7 +80,7 @@ def expected_df(input_df):
 
 
 class TestEvaluate:
-    """Test the bluepyparallel.evaluator.evaluate function."""
+    """Test the ``bluepyparallel.evaluator.evaluate`` function."""
 
     @pytest.mark.parametrize("with_sql", [True, False])
     def test_evaluate(self, input_df, new_columns, expected_df, db_url, with_sql, parallel_factory):
@@ -169,7 +173,10 @@ class TestEvaluate:
         assert "The value should not be 1" in result_df.loc[0, "exception"]
 
     def test_evaluate_keyboard_interrupt(self, input_df, expected_df):
-        """Test evaluator with a KeyboardInterrupt: only the first element should be computed."""
+        """Test evaluator with a ``KeyboardInterrupt``.
+
+        In this case only the first element should be computed.
+        """
         result_df = evaluate(
             input_df,
             _interrupting_function,
@@ -182,6 +189,7 @@ class TestEvaluate:
 
     @pytest.fixture
     def func_args_kwargs(self):
+        """Fixture with args and kwargs passed to the evaluated function."""
         return [
             ([], {}),
             ([10.0], {}),

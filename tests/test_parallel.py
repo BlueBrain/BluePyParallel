@@ -1,4 +1,4 @@
-"""Test the bluepyparallel.parallel module"""
+"""Test the ``bluepyparallel.parallel`` module."""
 # pylint: disable=missing-function-docstring
 # pylint: disable=redefined-outer-name
 from collections.abc import Iterator
@@ -23,16 +23,19 @@ def _evaluation_function_dict(element, coeff_a=1.0, coeff_b=1.0):
 
 @pytest.fixture
 def int_data():
+    """Fixture for simple integer data range."""
     return iter(range(10))
 
 
 @pytest.fixture
 def dict_data():
+    """Fixture for simple dict data."""
     return [{"a": i, "b": i * i} for i in range(10)]
 
 
 @pytest.fixture(params=["range", "dict"])
 def data(request, int_data, dict_data):
+    """Fixture for simple data depending of the type (range or dict)."""
     if request.param == "range":
         values = deepcopy(int_data), _evaluation_function_range
     elif request.param == "dict":
@@ -41,11 +44,13 @@ def data(request, int_data, dict_data):
 
 
 def expected_results(data, func, *args, **kwargs):
+    """Fixture with expected results."""
     return [func(i, *args, **kwargs) for i in data]
 
 
 @pytest.fixture
 def func_args_kwargs():
+    """Fixture with args and kwargs passed to the evaluated function."""
     return [
         ([], {}),
         ([10.0], {}),
@@ -57,7 +62,7 @@ def func_args_kwargs():
 
 
 class TestFactories:
-    """Test the bluepyparallel.parallel functions."""
+    """Test the ``bluepyparallel.parallel`` functions."""
 
     def test_computation(self, data, parallel_factory, func_args_kwargs):
         """Test evaluator on a trivial example."""
@@ -90,5 +95,6 @@ class TestFactories:
             assert res == expected_result
 
     def test_bad_factory_name(self):
+        """Test a factory with a wrong name."""
         with pytest.raises(KeyError):
             init_parallel_factory("UNKNOWN FACTORY")

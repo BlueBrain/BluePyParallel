@@ -105,7 +105,7 @@ class DataBase:
             return False
 
     def exists(self, table_name, schema_name=None):
-        """Test that the table exists in the database."""
+        """Check that the table exists in the database."""
         inspector = Inspector.from_engine(self.engine)
         return table_name in inspector.get_table_names(schema=schema_name)
 
@@ -116,13 +116,12 @@ class DataBase:
             table_name,
             self.metadata,
             schema=schema_name,
-            autoload=True,
             autoload_with=self.engine,
         )
 
     def load(self):
         """Load the table data from the database."""
-        query = select([self.table])
+        query = select(self.table)
         return pd.read_sql(query, self.connection, index_col=self.index_col)
 
     def write(self, row_id, result=None, exception=None, **input_values):
@@ -136,6 +135,7 @@ class DataBase:
 
         query = insert(self.table).values(dict(**{self.index_col: row_id}, **vals, **input_values))
         self.connection.execute(query)
+        self.connection.connection.commit()
 
     def write_batch(self, columns, data):
         """Write entries from a list of lists into the table."""

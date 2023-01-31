@@ -1,3 +1,4 @@
+"""Example of large computation using BluePyParallel."""
 import sys
 import time
 
@@ -9,7 +10,7 @@ from bluepyparallel import init_parallel_factory
 
 
 def func(row):
-    """Trivial computation"""
+    """Trivial computation."""
     time.sleep(1)
 
     if row["data"] in [1, 3]:

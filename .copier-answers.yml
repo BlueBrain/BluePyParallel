@@ -1,6 +1,6 @@
 # Changes here will be overwritten by Copier
 
-_commit: 0.1.12
+_commit: 0.1.34
 _src_path: git@bbpgitlab.epfl.ch:neuromath/python-template.git
 author_email: bbp-ou-cells@groupes.epfl.ch
 author_name: bbp-ou-cells
@@ -9,7 +9,7 @@ copyright_year: '2022'
 distribution_name: bluepyparallel
 download_url: https://bbpgitlab.epfl.ch/neuromath/bluepyparallel
 init_git: false
-maintainer: null
+maintainer: Adrien Berchet
 package_name: bluepyparallel
 project_description: Provides an embarassingly parallel tool with sql backend.
 project_name: BluePyParallel
@@ -21,6 +21,6 @@ ssh_url: git@bbpgitlab.epfl.ch:neuromath/bluepyparallel.git
 support_py37: true
 team_name: neuromath
 tracker_url: https://bbpteam.epfl.ch/project/issues/projects/CELLS/issues
-version: 0.0.8.dev0
+version: 0.0.9.dev0
 
 # End of Copier answers
