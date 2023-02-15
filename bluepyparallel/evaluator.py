@@ -81,7 +81,6 @@ def _evaluate_dataframe(
 def _evaluate_basic(
     to_evaluate, input_cols, evaluation_function, func_args, func_kwargs, mapper, task_ids, db
 ):
-
     res = []
     # Setup the function to apply to the data
     eval_func = partial(

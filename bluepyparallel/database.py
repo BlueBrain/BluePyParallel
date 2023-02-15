@@ -133,7 +133,7 @@ class DataBase:
         else:
             return
 
-        query = insert(self.table).values(dict(**{self.index_col: row_id}, **vals, **input_values))
+        query = insert(self.table).values({**{self.index_col: row_id}, **vals, **input_values})
         self.connection.execute(query)
         self.connection.connection.commit()
 
