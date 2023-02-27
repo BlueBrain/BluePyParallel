@@ -1,5 +1,18 @@
 # Changelog
 
+## [bluepyparallel-v0.0.9](https://bbpgitlab.epfl.ch/neuromath/bluepyparallel/compare/bluepyparallel-v0.0.8...bluepyparallel-v0.0.9)
+
+> 27 February 2023
+
+### Chores And Housekeeping
+
+- Compatibility with SQLAlchemy&gt;=2 (Adrien Berchet - [6acefdc](https://bbpgitlab.epfl.ch/neuromath/bluepyparallel/commit/6acefdcaa56f55a1a39d9c926031093f19263249))
+
+### CI Improvements
+
+- Bump pre-commit hooks (Adrien Berchet - [e7e6229](https://bbpgitlab.epfl.ch/neuromath/bluepyparallel/commit/e7e62292c36d43c9677747c0de3938e36eb55e9a))
+- Fix coverage job for tox 4 (Adrien Berchet - [050d199](https://bbpgitlab.epfl.ch/neuromath/bluepyparallel/commit/050d199ca548760b48dfef003fc6514588930c58))
+
 ## bluepyparallel-v0.0.8
 
 > 31 October 2022
@@ -21,7 +34,7 @@
 
 - Update pre-commit hook versions (Adrien Berchet - [af662b0](https://bbpgitlab.epfl.ch/neuromath/bluepyparallel/commit/af662b0fb787e99971d6ccf65f813b41dc9ff21d))
 
-### Uncategorized Changes
+### General Changes
 
 - first commit (arnaudon - [e6a7274](https://bbpgitlab.epfl.ch/neuromath/bluepyparallel/commit/e6a727467a50fd3c52c3d65a37f6da8287ca7467))
 - Add wrapper to pass args and kwargs to the function and improve test coverage (Adrien Berchet - [790656b](https://bbpgitlab.epfl.ch/neuromath/bluepyparallel/commit/790656bac98dcdcaee2697e2f96a767798b4d89b))
