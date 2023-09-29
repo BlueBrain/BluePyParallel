@@ -1,6 +1,6 @@
 # Changes here will be overwritten by Copier
 
-_commit: 0.1.35
+_commit: 0.1.52
 _src_path: git@bbpgitlab.epfl.ch:neuromath/python-template.git
 author_email: bbp-ou-cells@groupes.epfl.ch
 author_name: bbp-ou-cells
@@ -17,10 +17,11 @@ project_url: https://bbpteam.epfl.ch/documentation/projects/bluepyparallel
 repository_name: bluepyparallel
 repository_namespace: neuromath
 repository_provider: gitlab
+setup_codeql: false
 ssh_url: git@bbpgitlab.epfl.ch:neuromath/bluepyparallel.git
-support_py37: true
 team_name: neuromath
 tracker_url: https://bbpteam.epfl.ch/project/issues/projects/CELLS/issues
+use_pyproject_toml: false
 version: 0.0.9.dev0
 
 # End of Copier answers

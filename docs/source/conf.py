@@ -10,14 +10,14 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
-from pkg_resources import get_distribution
+from importlib import metadata
 
 # -- Project information -----------------------------------------------------
 
 project = "BluePyParallel"
 
 # The short X.Y version
-version = get_distribution("bluepyparallel").version
+version = metadata.version("bluepyparallel")
 
 # The full version, including alpha/beta/rc tags
 release = version

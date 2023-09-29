@@ -1,6 +1,6 @@
 """bluepyparallel package.
 
-Provides an embarassingly parallel tool with sql backend.
+Provides an embarrassingly parallel tool with sql backend.
 """
 from bluepyparallel.evaluator import evaluate  # noqa
 from bluepyparallel.parallel import init_parallel_factory  # noqa

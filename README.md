@@ -1,10 +1,10 @@
-# BluePyParallel: Bluebrain Python Embarassingly Parallel library
+# BluePyParallel: Bluebrain Python Embarrassingly Parallel library
 
-Provides an embarassingly parallel tool with sql backend.
+Provides an embarrassingly parallel tool with sql backend.
 
 ## Introduction
 
-Provides an embarassingly parallel tool with sql backend, inspired by [BluePyMM](https://github.com/BlueBrain/BluePyMM).
+Provides an embarrassingly parallel tool with sql backend, inspired by [BluePyMM](https://github.com/BlueBrain/BluePyMM).
 
 
 ## Installation
