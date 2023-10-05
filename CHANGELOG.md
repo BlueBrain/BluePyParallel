@@ -1,5 +1,17 @@
 # Changelog
 
+## [bluepyparallel-v0.1.0](https://bbpgitlab.epfl.ch/neuromath/bluepyparallel/compare/bluepyparallel-v0.0.9...bluepyparallel-v0.1.0)
+
+> 5 October 2023
+
+### Build
+
+- Drop support for Python 3.7 (Adrien Berchet - [f948fb3](https://bbpgitlab.epfl.ch/neuromath/bluepyparallel/commit/f948fb3871597ad140186389f1ddf1a89852917f))
+
+### New Features
+
+- Improve how dask can be configured (Adrien Berchet - [0aae758](https://bbpgitlab.epfl.ch/neuromath/bluepyparallel/commit/0aae758294d2cda9404defadcc226b900be5b8a7))
+
 ## [bluepyparallel-v0.0.9](https://bbpgitlab.epfl.ch/neuromath/bluepyparallel/compare/bluepyparallel-v0.0.8...bluepyparallel-v0.0.9)
 
 > 27 February 2023
