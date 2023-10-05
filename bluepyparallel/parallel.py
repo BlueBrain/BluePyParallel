@@ -1,9 +1,11 @@
 """Parallel helper."""
+import json
 import logging
 import multiprocessing
 import os
 from abc import abstractmethod
 from collections.abc import Iterator
+from copy import deepcopy
 from functools import partial
 from multiprocessing.pool import Pool
 
@@ -33,6 +35,7 @@ try:
 except ImportError:  # pragma: no cover
     ipyparallel_available = False
 
+from bluepyparallel.utils import replace_values_in_docstring
 
 L = logging.getLogger(__name__)
 
@@ -210,15 +213,78 @@ class IPyParallelFactory(ParallelFactory):
             pass
 
 
+_DEFAULT_DASK_CONFIG = {
+    "temporary-directory": None,
+    "distributed": {
+        "worker": {
+            "use_file_locking": False,
+            "memory": {
+                "target": False,
+                "spill": False,
+                "pause": 0.8,
+                "terminate": 0.95,
+            },
+            "profile": {
+                "enabled": False,
+            },
+        },
+        "admin": {
+            "tick": {
+                "limit": "1h",
+            },
+        },
+    },
+}
+
+_DASK_CONFIG_DOCSTRING = """
+It is possible to pass a custom dask configuration in several ways.
+The simplest way is to pass a dictionary to the `dask_config` argument.
+Another way is to create a YAML file containing the configuration and then set the `DASK_CONFIG`
+environment variable to its path. Note that this environment variable must be set before `dask`
+is imported and can not be updated afterwards.
+Also, it is possible to use the `TMPDIR` environment variable to specify the directory in which
+the dask internals will be created. Note that this value will be overridden if a dask configuration
+is given.
+If no config is provided, the following is used:
+
+.. code-block:: JSON
+
+    <>
+""".replace(
+    "<>",
+    json.dumps(
+        _DEFAULT_DASK_CONFIG,
+        sort_keys=True,
+        indent=4,
+    ).replace("\n", "\n" + " " * 4),
+)
+
+
+@replace_values_in_docstring(external_config_block=_DASK_CONFIG_DOCSTRING)
 class DaskFactory(ParallelFactory):
-    """Parallel helper class using dask."""
+    """Parallel helper class using dask.
+
+    <external_config_block>
+    """
 
     _SCHEDULER_PATH = "PARALLEL_DASK_SCHEDULER_PATH"
 
     def __init__(
-        self, batch_size=None, chunk_size=None, scheduler_file=None, address=None, **kwargs
+        self,
+        batch_size=None,
+        chunk_size=None,
+        scheduler_file=None,
+        address=None,
+        dask_config=None,
+        **kwargs,
     ):
         """Initialize the dask factory."""
+        _default_config = deepcopy(_DEFAULT_DASK_CONFIG)
+        _default_config["temporary-directory"] = os.environ.get("TMPDIR", None)
+        dask.config.update_defaults(_default_config)
+        if dask_config is not None:  # pragma: no cover
+            dask.config.set(dask_config)
+
         dask_scheduler_path = scheduler_file or os.getenv(self._SCHEDULER_PATH)
         self.interactive = True
         if dask_scheduler_path:  # pragma: no cover
@@ -269,36 +335,14 @@ class DaskFactory(ParallelFactory):
         return _mapper
 
 
+@replace_values_in_docstring(external_config_block=_DASK_CONFIG_DOCSTRING)
 class DaskDataFrameFactory(DaskFactory):
-    """Parallel helper class using dask.dataframe."""
+    """Parallel helper class using `dask.dataframe`.
+
+    <external_config_block>
+    """
 
     _SCHEDULER_PATH = "PARALLEL_DASK_SCHEDULER_PATH"
-
-    def __init__(
-        self,
-        batch_size=None,
-        chunk_size=None,
-        scheduler_file=None,
-        address=None,
-        dask_config=None,
-        **kwargs,
-    ):
-        super().__init__(
-            batch_size, chunk_size, scheduler_file=scheduler_file, address=address, **kwargs
-        )
-        if dask_config is None:  # pragma: no cover
-            dask_config = {
-                "distributed.worker.use_file_locking": False,
-                "distributed.worker.memory.target": False,
-                "distributed.worker.memory.spill": False,
-                "distributed.worker.memory.pause": 0.8,
-                "distributed.worker.memory.terminate": 95,
-                "distributed.worker.profile.interval": "10000ms",
-                "distributed.worker.profile.cycle": "1000000ms",
-                "distributed.admin.tick.limit": "1h",
-            }
-
-        dask.config.set(dask_config)
 
     def _with_batches(self, *args, **kwargs):
         """Specific process for batches."""

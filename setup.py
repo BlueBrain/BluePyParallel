@@ -33,6 +33,7 @@ doc_reqs = [
 
 test_reqs = [
     "mpi4py>=3.0.1",
+    "packaging>=20",
     "pytest>=6.1",
     "pytest-benchmark>=3.4",
     "pytest-cov>=3",
