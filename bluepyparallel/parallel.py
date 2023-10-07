@@ -5,7 +5,6 @@ import multiprocessing
 import os
 from abc import abstractmethod
 from collections.abc import Iterator
-from copy import deepcopy
 from functools import partial
 from multiprocessing.pool import Pool
 
@@ -214,7 +213,6 @@ class IPyParallelFactory(ParallelFactory):
 
 
 _DEFAULT_DASK_CONFIG = {
-    "temporary-directory": None,
     "distributed": {
         "worker": {
             "use_file_locking": False,
@@ -242,9 +240,9 @@ The simplest way is to pass a dictionary to the `dask_config` argument.
 Another way is to create a YAML file containing the configuration and then set the `DASK_CONFIG`
 environment variable to its path. Note that this environment variable must be set before `dask`
 is imported and can not be updated afterwards.
-Also, it is possible to use the `TMPDIR` environment variable to specify the directory in which
-the dask internals will be created. Note that this value will be overridden if a dask configuration
-is given.
+Also, it is possible to use the `SHMDIR` or the `TMPDIR` environment variable to specify the
+directory in which the dask internals will be created. Note that this value will be overridden if a
+dask configuration is given.
 If no config is provided, the following is used:
 
 .. code-block:: JSON
@@ -279,11 +277,20 @@ class DaskFactory(ParallelFactory):
         **kwargs,
     ):
         """Initialize the dask factory."""
-        _default_config = deepcopy(_DEFAULT_DASK_CONFIG)
-        _default_config["temporary-directory"] = os.environ.get("TMPDIR", None)
-        dask.config.update_defaults(_default_config)
+        # Merge the default config with the existing config (keep existing values)
+        new_dask_config = dask.config.merge(_DEFAULT_DASK_CONFIG, dask.config.config)
+
+        # Get temporary-directory from environment variables
+        _TMP = os.environ.get("SHMDIR", None) or os.environ.get("TMPDIR", None)
+        if _TMP is not None:  # pragma: no cover
+            new_dask_config["temporary-directory"] = _TMP
+
+        # Merge the config with the one given as argument
         if dask_config is not None:  # pragma: no cover
-            dask.config.set(dask_config)
+            new_dask_config = dask.config.merge(new_dask_config, dask_config)
+
+        # Set the dask config
+        dask.config.set(new_dask_config)
 
         dask_scheduler_path = scheduler_file or os.getenv(self._SCHEDULER_PATH)
         self.interactive = True
