@@ -1,5 +1,17 @@
 # Changelog
 
+## [bluepyparallel-v0.2.0](https://bbpgitlab.epfl.ch/neuromath/bluepyparallel/compare/bluepyparallel-v0.1.0...bluepyparallel-v0.2.0)
+
+> 6 November 2023
+
+### Build
+
+- Relax ipyparallel (Adrien Berchet - [718b5d1](https://bbpgitlab.epfl.ch/neuromath/bluepyparallel/commit/718b5d14893b1b74b322fa5c3303e38f190239b7))
+
+### New Features
+
+- Improve the ways dask can be configured (Adrien Berchet - [c16e686](https://bbpgitlab.epfl.ch/neuromath/bluepyparallel/commit/c16e686aa026527f96d74d9619a120872446f637))
+
 ## [bluepyparallel-v0.1.0](https://bbpgitlab.epfl.ch/neuromath/bluepyparallel/compare/bluepyparallel-v0.0.9...bluepyparallel-v0.1.0)
 
 > 5 October 2023
