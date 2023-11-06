@@ -15,10 +15,11 @@ VERSION = module.VERSION
 
 reqs = [
     "pandas>=1.3",
-    "ipyparallel>=6.3,<7",
+    "ipyparallel>=6.3",
     "dask[dataframe, distributed]>=2021.11",
     "dask-mpi>=2021.11",
     "distributed>=2021.11",
+    "packaging>=20",
     "sqlalchemy>=1.4.24",
     "sqlalchemy<2; python_version<'3.8'",
     "sqlalchemy-utils>=0.37.2",

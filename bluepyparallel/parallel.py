@@ -1,4 +1,5 @@
 """Parallel helper."""
+import importlib.metadata
 import json
 import logging
 import multiprocessing
@@ -9,6 +10,7 @@ from functools import partial
 from multiprocessing.pool import Pool
 
 import numpy as np
+from packaging import version
 
 try:
     import dask.distributed
@@ -29,6 +31,8 @@ except ImportError:  # pragma: no cover
 
 try:
     import ipyparallel
+
+    ipyparallel_major_version = version.parse(importlib.metadata.version("ipyparallel")).major
 
     ipyparallel_available = True
 except ImportError:  # pragma: no cover
@@ -194,7 +198,8 @@ class IPyParallelFactory(ParallelFactory):
         if "ordered" not in kwargs:  # pragma: no cover
             kwargs["ordered"] = False
 
-        self._chunksize_to_kwargs(chunk_size, kwargs)
+        if ipyparallel_major_version < 7:  # pragma: no cover
+            self._chunksize_to_kwargs(chunk_size, kwargs)
 
         def _mapper(func, iterable, *func_args, **func_kwargs):
             mapped_func = self.mappable_func(func, *func_args, **func_kwargs)
