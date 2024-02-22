@@ -97,6 +97,24 @@ class TestEvaluate:
 
         assert_frame_equal(result_df, expected_df, check_like=True)
 
+    @pytest.mark.parametrize("with_sql", [True, False])
+    def test_evaluate_no_shuffle(
+        self, input_df, new_columns, expected_df, db_url, with_sql, parallel_factory
+    ):
+        """Test evaluator on a trivial example."""
+        result_df = evaluate(
+            input_df,
+            _evaluation_function,
+            new_columns,
+            parallel_factory=parallel_factory,
+            db_url=db_url if with_sql else None,
+            shuffle_rows=False,
+        )
+        if not with_sql:
+            remove_sql_cols(expected_df)
+
+        assert_frame_equal(result_df, expected_df, check_like=True)
+
     def test_evaluate_no_factory(self, input_df, new_columns, expected_df):
         """Test evaluator with no given factory."""
         result_df = evaluate(
@@ -180,6 +198,7 @@ class TestEvaluate:
         result_df = evaluate(
             input_df,
             _interrupting_function,
+            shuffle_rows=False,
         )
         remove_sql_cols(expected_df)
 

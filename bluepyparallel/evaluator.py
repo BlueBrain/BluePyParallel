@@ -1,4 +1,5 @@
 """Module to evaluate generic functions on rows of dataframe."""
+
 import logging
 import sys
 import traceback
@@ -147,6 +148,7 @@ def evaluate(
     db_url=None,
     func_args=None,
     func_kwargs=None,
+    shuffle_rows=True,
     **mapper_kwargs,
 ):
     """Evaluate and save results in a sqlite database on the fly and return dataframe.
@@ -168,6 +170,7 @@ def evaluate(
             communication with the SQL database.
         func_args (list): the arguments to pass to the evaluation_function.
         func_kwargs (dict): the keyword arguments to pass to the evaluation_function.
+        shuffle_rows (bool): if :obj:`True`, it will shuffle the rows before computing the results.
         **mapper_kwargs: the keyword arguments are passed to the get_mapper() method of the
             :class:`ParallelFactory` instance.
 
@@ -192,6 +195,10 @@ def evaluate(
 
     # Shallow copy the given DataFrame to add internal rows
     to_evaluate = df.copy()
+
+    if shuffle_rows:
+        to_evaluate = to_evaluate.sample(frac=1)
+
     task_ids = to_evaluate.index
 
     # Set default new columns
@@ -248,5 +255,8 @@ def evaluate(
             db,
         )
     to_evaluate.loc[res_df.index, res_df.columns] = res_df
+
+    if shuffle_rows:
+        return to_evaluate.loc[df.index]
 
     return to_evaluate
