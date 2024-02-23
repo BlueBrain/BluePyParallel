@@ -1,5 +1,5 @@
 {
-  "name": "bluepyparallel",
+  "name": "BluePyParallel",
   "auto-changelog": {
     "replaceText": {
       "([bB]reaking: ?)": "",

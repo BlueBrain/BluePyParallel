@@ -17,7 +17,7 @@ from importlib import metadata
 project = "BluePyParallel"
 
 # The short X.Y version
-version = metadata.version("bluepyparallel")
+version = metadata.version("BluePyParallel")
 
 # The full version, including alpha/beta/rc tags
 release = version
@@ -61,7 +61,7 @@ html_theme = "sphinx-bluebrain-theme"
 # html_static_path = ['_static']
 
 html_theme_options = {
-    "metadata_distribution": "bluepyparallel",
+    "metadata_distribution": "BluePyParallel",
 }
 
 html_title = project

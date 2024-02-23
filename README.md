@@ -98,3 +98,14 @@ export PARALLEL_BATCH_SIZE=1000
 
 srun -v <command>
 ```
+
+
+## Funding & Acknowledgment
+
+The development of this software was supported by funding to the Blue Brain Project, a research
+center of the École polytechnique fédérale de Lausanne (EPFL), from the Swiss government’s ETH
+Board of the Swiss Federal Institutes of Technology.
+
+For license and authors, see `LICENSE.txt` and `AUTHORS.md` respectively.
+
+Copyright © 2023-2024 Blue Brain Project/EPFL

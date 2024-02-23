@@ -1,27 +1,25 @@
 # Changes here will be overwritten by Copier
 
-_commit: 0.1.52
+_commit: 0.1.55
 _src_path: git@bbpgitlab.epfl.ch:neuromath/python-template.git
-author_email: bbp-ou-cells@groupes.epfl.ch
-author_name: bbp-ou-cells
-copyright_license: BBP-internal-confidential
-copyright_year: '2022'
-distribution_name: bluepyparallel
-download_url: https://bbpgitlab.epfl.ch/neuromath/bluepyparallel
+author_name: Blue Brain Project, EPFL
+copyright_license: Apache License 2.0
+copyright_year: '2024'
+distribution_name: BluePyParallel
+download_url: https://github.com/BlueBrain/BluePyParallel
 init_git: false
 maintainer: Adrien Berchet
 package_name: bluepyparallel
-project_description: Provides an embarassingly parallel tool with sql backend.
+project_description: Provides an embarrassingly parallel tool with sql backend.
 project_name: BluePyParallel
-project_url: https://bbpteam.epfl.ch/documentation/projects/bluepyparallel
-repository_name: bluepyparallel
-repository_namespace: neuromath
-repository_provider: gitlab
+project_url: https://BluePyParallel.readthedocs.io
+repository_name: BluePyParallel
+repository_namespace: BlueBrain
+repository_provider: github
 setup_codeql: false
-ssh_url: git@bbpgitlab.epfl.ch:neuromath/bluepyparallel.git
-team_name: neuromath
-tracker_url: https://bbpteam.epfl.ch/project/issues/projects/CELLS/issues
-use_pyproject_toml: false
+ssh_url: git@github.com:BlueBrain/BluePyParallel.git
+tracker_url: https://github.com/BlueBrain/BluePyParallel/issues
+use_pyproject_toml: true
 version: 0.0.9.dev0
 
 # End of Copier answers

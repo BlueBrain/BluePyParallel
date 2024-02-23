@@ -1,12 +1,11 @@
 {
     "output": "CHANGELOG.md",
     "template": ".auto-changelog-template.hbs",
-    "tagPrefix": "bluepyparallel-v",
     "commitLimit": false,
     "backfillLimit": false,
-    "ignoreCommitPattern": "^Release:? [0-9]+\\.[0-9]+\\.[0-9]+$|^Update CHANGELOG.*|.*\\[skip-changelog\\].*|^\\[pre-commit.ci\\]|^\\(dependabot\\) .*",
-    "commitUrl": "https://bbpgitlab.epfl.ch/neuromath/bluepyparallel/commit/{id}",
-    "issueUrl": "https://bbpgitlab.epfl.ch/neuromath/bluepyparallel/issues/{id}",
-    "mergeUrl": "https://bbpgitlab.epfl.ch/neuromath/bluepyparallel/merge_requests/{id}",
-    "compareUrl": "https://bbpgitlab.epfl.ch/neuromath/bluepyparallel/compare/{from}...{to}"
+    "ignoreCommitPattern": "^Release:? [0-9]+\\.[0-9]+\\.[0-9]+( ?\\(#[0-9]+\\))?$|^Update CHANGELOG.*|.*\\[skip-changelog\\].*|^\\[pre-commit.ci\\]|^\\(dependabot\\) .*",
+    "commitUrl": "https://github.com/BlueBrain/BluePyParallel/commit/{id}",
+    "issueUrl": "https://github.com/BlueBrain/BluePyParallel/issues/{id}",
+    "mergeUrl": "https://github.com/BlueBrain/BluePyParallel/pull/{id}",
+    "compareUrl": "https://github.com/BlueBrain/BluePyParallel/compare/{from}..{to}"
 }
