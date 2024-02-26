@@ -4,7 +4,7 @@ Provides an embarrassingly parallel tool with sql backend.
 
 ## Introduction
 
-Provides an embarrassingly parallel tool with sql backend, inspired by [BluePyMM](https://github.com/BlueBrain/BluePyMM).
+Provides an embarrassingly parallel tool with sql backend, inspired by [BluePyMM](https://github.com/BlueBrain/BluePyMM) of @wvangeit.
 
 
 ## Installation
