@@ -1,5 +1,20 @@
 """Configuration file for the Sphinx documentation builder."""
 
+# Copyright 2012-2024 Blue Brain Project / EPFL
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 # This file only contains a selection of the most common options. For a full
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
@@ -17,7 +32,7 @@ from importlib import metadata
 project = "BluePyParallel"
 
 # The short X.Y version
-version = metadata.version("bluepyparallel")
+version = metadata.version("BluePyParallel")
 
 # The full version, including alpha/beta/rc tags
 release = version
@@ -61,7 +76,7 @@ html_theme = "sphinx-bluebrain-theme"
 # html_static_path = ['_static']
 
 html_theme_options = {
-    "metadata_distribution": "bluepyparallel",
+    "metadata_distribution": "BluePyParallel",
 }
 
 html_title = project
