@@ -35,10 +35,10 @@ jobs:
       with:
         packages:
           graphviz
-          libhdf5-openmpi-dev
-          libopenmpi-dev
         version: 1.0
         execute_install_scripts: true
+    - name: Install MPI
+      run: sudo apt-get install libhdf5-openmpi-dev libopenmpi-dev
     - name: Cache tox and precommit environments
       uses: actions/cache@v4
       with:
