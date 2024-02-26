@@ -30,15 +30,8 @@ jobs:
     - name: Get current month
       id: date
       run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
-    - name: Cache APT Packages
-      uses: awalsh128/cache-apt-pkgs-action@latest
-      with:
-        packages:
-          graphviz
-        version: 1.0
-        execute_install_scripts: true
     - name: Install MPI
-      run: sudo apt-get install libhdf5-openmpi-dev libopenmpi-dev
+      run: sudo apt-get install libopenmpi-dev
     - name: Cache tox and precommit environments
       uses: actions/cache@v4
       with:
@@ -46,10 +39,6 @@ jobs:
           .tox
           ~/.cache/pre-commit
         key: ${{ runner.os }}-${{ matrix.python-version }}-${{ steps.date.outputs.date }}-${{ hashFiles('setup.py') }}-${{ hashFiles('.pre-commit-config.yaml') }}
-    - name: Register dot plugin
-      # This step should only be used when you need dot / graphviz
-      run: |
-        sudo dot -c
     - name: Clear results in tox environments
       run: |
         rm -rf .tox/*/tmp
