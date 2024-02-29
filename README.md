@@ -92,9 +92,10 @@ If the crash was due to an external cause (therefore executing the code again sh
 computation from the last computed element. Thus, only the missing elements are computed, which can save a lot of time.
 
 
-## Running using Dask
+## Running with distributed Dask MPI on HPC systems
 
-This is an example of a [sbatch](https://slurm.schedmd.com/sbatch.html) script that can be adapted to execute the script using multiple nodes and workers.
+This is an example of a [sbatch](https://slurm.schedmd.com/sbatch.html) script that can be
+adapted to execute the script using multiple nodes and workers with distributed dask and MPI. 
 In this example, the code called by the ``run.py`` should be parallelized using BluePyParallel.
 
 Dask variables are not strictly required, but highly recommended, and they can be fine tuned.
