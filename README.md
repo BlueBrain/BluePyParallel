@@ -136,7 +136,7 @@ if __name__ == "__main__":
 
 This is because everything before `init_parallel_factory` will be run in parallel, as mpi is not initialized yet.
 
-.. note:: We recommand to use `dask_dataframe` instead of `dask`, as it is in practice more stable for large computations.
+.. note:: We recommend to use `dask_dataframe` instead of `dask`, as it is in practice more stable for large computations.
 
 ## Funding & Acknowledgment
 
