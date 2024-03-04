@@ -7,5 +7,6 @@
     "commitUrl": "https://github.com/BlueBrain/BluePyParallel/commit/{id}",
     "issueUrl": "https://github.com/BlueBrain/BluePyParallel/issues/{id}",
     "mergeUrl": "https://github.com/BlueBrain/BluePyParallel/pull/{id}",
-    "compareUrl": "https://github.com/BlueBrain/BluePyParallel/compare/{from}..{to}"
+    "compareUrl": "https://github.com/BlueBrain/BluePyParallel/compare/{from}..{to}",
+    "startingVersion": "0.2.1"
 }
