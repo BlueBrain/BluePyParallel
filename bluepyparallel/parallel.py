@@ -379,8 +379,13 @@ class DaskDataFrameFactory(DaskFactory):
             yield tmp
 
     def get_mapper(self, batch_size=None, chunk_size=None, **kwargs):
-        """Get a Dask mapper."""
+        """Get a Dask mapper.
+
+        If ``progress_bar=True`` is passed as keyword argument, a progress bar will be displayed
+        during computation.
+        """
         self._chunksize_to_kwargs(chunk_size, kwargs, label="chunksize")
+        progress_bar = kwargs.pop("progress_bar", True)
         if not kwargs.get("chunksize"):
             kwargs["npartitions"] = self.nb_processes or 1
 
@@ -389,7 +394,8 @@ class DaskDataFrameFactory(DaskFactory):
                 df = pd.DataFrame(iterable)
                 ddf = dd.from_pandas(df, **kwargs)
                 future = ddf.apply(func, meta=meta, axis=1).persist()
-                progress(future)
+                if progress_bar:
+                    progress(future)
                 # Put into a list because of the 'yield from' in _with_batches
                 return [future.compute()]
 
