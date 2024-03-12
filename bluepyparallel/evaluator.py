@@ -94,7 +94,15 @@ def _evaluate_dataframe(
 
 
 def _evaluate_basic(
-    to_evaluate, input_cols, evaluation_function, func_args, func_kwargs, mapper, task_ids, db
+    to_evaluate,
+    input_cols,
+    evaluation_function,
+    func_args,
+    func_kwargs,
+    mapper,
+    task_ids,
+    db,
+    progress_bar=True,
 ):
     res = []
     # Setup the function to apply to the data
@@ -109,8 +117,11 @@ def _evaluate_basic(
     arg_list = list(to_evaluate.loc[task_ids, input_cols].to_dict("index").items())
 
     try:
+        tasks = mapper(eval_func, arg_list)
+        if progress_bar:
+            tasks = tqdm(tasks, total=len(task_ids))
         # Compute and collect the results
-        for task_id, result, exception in tqdm(mapper(eval_func, arg_list), total=len(task_ids)):
+        for task_id, result, exception in tasks:
             res.append(dict({"df_index": task_id, "exception": exception}, **result))
 
             # Save the results into the DB
@@ -163,6 +174,7 @@ def evaluate(
     func_args=None,
     func_kwargs=None,
     shuffle_rows=True,
+    progress_bar=True,
     **mapper_kwargs,
 ):
     """Evaluate and save results in a sqlite database on the fly and return dataframe.
@@ -185,12 +197,14 @@ def evaluate(
         func_args (list): the arguments to pass to the evaluation_function.
         func_kwargs (dict): the keyword arguments to pass to the evaluation_function.
         shuffle_rows (bool): if :obj:`True`, it will shuffle the rows before computing the results.
+        progress_bar (bool): if :obj:`True`, a progress bar will be displayed during computation.
         **mapper_kwargs: the keyword arguments are passed to the get_mapper() method of the
             :class:`ParallelFactory` instance.
 
     Return:
         pandas.DataFrame: dataframe with new columns containing the computed results.
     """
+    # pylint: disable=too-many-branches
     # Initialize the parallel factory
     if isinstance(parallel_factory, str) or parallel_factory is None:
         parallel_factory = init_parallel_factory(parallel_factory)
@@ -243,6 +257,8 @@ def evaluate(
         return to_evaluate
 
     # Get the factory mapper
+    if isinstance(parallel_factory, DaskDataFrameFactory):
+        mapper_kwargs["progress_bar"] = progress_bar
     mapper = parallel_factory.get_mapper(**mapper_kwargs)
 
     if isinstance(parallel_factory, DaskDataFrameFactory):
@@ -267,6 +283,7 @@ def evaluate(
             mapper,
             task_ids,
             db,
+            progress_bar,
         )
     to_evaluate.loc[res_df.index, res_df.columns] = res_df
 

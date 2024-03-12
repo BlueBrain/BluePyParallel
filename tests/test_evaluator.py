@@ -98,7 +98,10 @@ class TestEvaluate:
     """Test the ``bluepyparallel.evaluator.evaluate`` function."""
 
     @pytest.mark.parametrize("with_sql", [True, False])
-    def test_evaluate(self, input_df, new_columns, expected_df, db_url, with_sql, parallel_factory):
+    @pytest.mark.parametrize("progress_bar", [True, False])
+    def test_evaluate(
+        self, input_df, new_columns, expected_df, db_url, with_sql, progress_bar, parallel_factory
+    ):
         """Test evaluator on a trivial example."""
         result_df = evaluate(
             input_df,
@@ -106,6 +109,7 @@ class TestEvaluate:
             new_columns,
             parallel_factory=parallel_factory,
             db_url=db_url if with_sql else None,
+            progress_bar=progress_bar,
         )
         if not with_sql:
             remove_sql_cols(expected_df)
