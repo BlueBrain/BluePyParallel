@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.2](https://github.com/BlueBrain/BluePyParallel/compare/0.2.1..0.2.2)
+
+> 13 March 2024
+
+### New Features
+
+- Can disable progress bar (Adrien Berchet - [#4](https://github.com/BlueBrain/BluePyParallel/pull/4))
+
 ## [0.2.1](https://github.com/BlueBrain/BluePyParallel/compare/0.2.0..0.2.1)
 
 > 4 March 2024
