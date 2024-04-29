@@ -111,7 +111,7 @@ class TestFactories:
                 meta = pd.DataFrame({name: pd.Series(dtype="object")})
                 res = list(mapper(evaluation_function, mapped_data, *args, meta=meta, **kwargs))
                 res = pd.concat(res)
-                res = res[name].tolist()
+                res = res.iloc[:, 0].tolist()
             else:
                 res = sorted(mapper(evaluation_function, mapped_data, *args, **kwargs))
 
