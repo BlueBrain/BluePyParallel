@@ -1,6 +1,6 @@
 # Changes here will be overwritten by Copier
 
-_commit: 0.1.65
+_commit: 0.1.66
 _src_path: git@bbpgitlab.epfl.ch:neuromath/python-template.git
 author_name: Blue Brain Project, EPFL
 copyright_license: Apache License 2.0
