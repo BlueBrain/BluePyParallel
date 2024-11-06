@@ -29,10 +29,11 @@ from importlib import metadata
 
 # -- Project information -----------------------------------------------------
 
-project = "BluePyParallel"
+project_name = "BluePyParallel"
+package_name = "BluePyParallel"
 
 # The short X.Y version
-version = metadata.version("BluePyParallel")
+version = metadata.version(package_name)
 
 # The full version, including alpha/beta/rc tags
 release = version
@@ -76,10 +77,10 @@ html_theme = "sphinx-bluebrain-theme"
 # html_static_path = ['_static']
 
 html_theme_options = {
-    "metadata_distribution": "BluePyParallel",
+    "metadata_distribution": package_name,
 }
 
-html_title = project
+html_title = project_name
 
 # If true, links to the reST sources are added to the pages.
 html_show_sourcelink = False
