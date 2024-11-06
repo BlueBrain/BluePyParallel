@@ -5,14 +5,13 @@ authors = [
 ]
 description = "Provides an embarrassingly parallel tool with sql backend."
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = { text = "Apache License 2.0" }
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -45,8 +44,8 @@ test = [
     "packaging>=20",
     "pytest>=6.1",
     "pytest-benchmark>=3.4",
-    "pytest-cov>=3",
-    "pytest-html>=3.1",
+    "pytest-cov>=4.1",
+    "pytest-html>=3.2",
 ]
 
 [project.urls]
@@ -69,10 +68,10 @@ include = ["bluepyparallel*"]
 [tool.black]
 line-length = 100
 target-version = [
-    "py38",
     "py39",
     "py310",
     "py311",
+    "py312",
 ]
 
 [tool.pydocstyle]

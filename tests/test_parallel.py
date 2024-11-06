@@ -60,10 +60,11 @@ def dict_data():
 def data(request, int_data, dict_data):
     """Fixture for simple data depending of the type (range or dict)."""
     if request.param == "range":
-        values = deepcopy(int_data), _evaluation_function_range
+        return deepcopy(int_data), _evaluation_function_range
     elif request.param == "dict":
-        values = deepcopy(dict_data), _evaluation_function_dict
-    return values
+        return deepcopy(dict_data), _evaluation_function_dict
+    else:
+        raise ValueError(f"Unknown value '{request.param}'")
 
 
 def expected_results(data, func, *args, **kwargs):
