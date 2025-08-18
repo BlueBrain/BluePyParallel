@@ -332,7 +332,7 @@ class DaskFactory(ParallelFactory):
         if self.interactive:
             self.nb_processes = len(self.client.scheduler_info()["workers"])
         else:  # pragma: no cover
-            from mpi4py import MPI  # pylint: disable=import-outside-toplevel
+            from mpi4py import MPI  # pylint: disable=import-outside-toplevel,no-name-in-module
 
             comm = MPI.COMM_WORLD  # pylint: disable=c-extension-no-member
             self.nb_processes = comm.Get_size()
